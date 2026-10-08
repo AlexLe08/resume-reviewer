@@ -25,6 +25,7 @@ export function buildReviewPrompt(
     '',
     'Rules:',
     '- Base every point on the resume text. Each piece of evidence must be copied word-for-word from the resume and kept short (under about 20 words).',
+    '- Evidence for a strength must come from the work experience (what the candidate did), not from their summary or objective. A summary is the candidate\'s own claim, not proof.',
     '- Do not comment on file format, layout, or how the PDF was parsed. Automated checks cover that separately.',
     '- Do not consider or comment on the candidate\'s name, age, gender, race, ethnicity, nationality, religion, disability, or other protected characteristics.',
     '- Be specific and direct. Skip generic advice that would apply to any resume.',
