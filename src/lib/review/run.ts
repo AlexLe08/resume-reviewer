@@ -7,6 +7,7 @@ import {
   type TokenUsage,
 } from '@/lib/llm';
 import { estimateCostUsd, logCall, type CallRecord } from '@/lib/llm/usage';
+import { analyzeTimeline, timelineFacts } from '@/lib/checks/timeline';
 import type { ExtractedDocument } from '@/lib/pdf/extract';
 import { annotateGrounding, type GroundedReview } from './grounding';
 import type { Persona } from './personas';
@@ -25,6 +26,8 @@ export interface RunReviewOptions {
   onDelta?: (text: string) => void;
   /** Write structured log lines. The eval runner turns this off to keep its output readable. */
   log?: boolean;
+  /** Defaults to now. Tests pass a fixed date. */
+  today?: Date;
 }
 
 /**
@@ -38,8 +41,9 @@ export async function runReview(
   persona: Persona,
   options: RunReviewOptions = {},
 ): Promise<ReviewOutcome> {
-  const { signal, onDelta, log = true } = options;
-  const { system, user } = buildReviewPrompt(persona, doc.text);
+  const { signal, onDelta, log = true, today = new Date() } = options;
+  const facts = timelineFacts(analyzeTimeline(doc.text, today));
+  const { system, user } = buildReviewPrompt(persona, doc.text, today, facts);
   const started = performance.now();
   let raw = '';
   let usage: TokenUsage = { inputTokens: 0, outputTokens: 0, thinkingTokens: 0 };

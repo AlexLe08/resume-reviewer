@@ -1,4 +1,5 @@
 import type { ExtractedDocument } from '@/lib/pdf/extract';
+import { analyzeTimeline, checkTimeline } from './timeline';
 
 export type CheckStatus = 'pass' | 'warn' | 'fail';
 
@@ -13,13 +14,14 @@ export interface CheckResult {
  * Deterministic checks: plain code, no LLM. They're free, instant, and always
  * give the same answer, so anything we CAN check this way, we should.
  */
-export function runChecks(doc: ExtractedDocument): CheckResult[] {
+export function runChecks(doc: ExtractedDocument, today: Date = new Date()): CheckResult[] {
   return [
     checkExtractableText(doc),
     checkEmail(doc.text),
     checkPhone(doc.text),
     checkSections(doc.text),
     checkLength(doc),
+    checkTimeline(analyzeTimeline(doc.text, today)),
   ];
 }
 

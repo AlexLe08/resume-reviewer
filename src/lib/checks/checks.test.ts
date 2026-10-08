@@ -4,7 +4,7 @@ import { findEmail, findMissingSections, findPhone, hasUsableText, runChecks } f
 const SAMPLE = `Jordan Lee
 jordan.lee@example.com | (555) 123-4567
 Experience
-Frontend Engineer, Acme Corp, 2019 - 2023
+Frontend Engineer, Acme Corp, 2019 - Present
 Built a design system used by 12 product teams.
 Education
 B.S. Computer Science

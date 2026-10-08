@@ -14,6 +14,16 @@ describe('sanitizeResumeText', () => {
 });
 
 describe('buildReviewPrompt', () => {
+  it('places computed facts after the resume block, outside its tags', () => {
+    const { user } = buildReviewPrompt(PERSONAS.recruiter, 'Resume text', new Date(2026, 9, 8), ['A fact.']);
+    expect(user.indexOf('- A fact.')).toBeGreaterThan(user.indexOf('</resume>'));
+  });
+
+  it('adds no facts section when there are none', () => {
+    const { user } = buildReviewPrompt(PERSONAS.recruiter, 'Resume text');
+    expect(user).not.toContain('Facts computed by code');
+  });
+
   it('wraps the resume in exactly one resume block', () => {
     const { user } = buildReviewPrompt(PERSONAS.recruiter, 'Experience: Acme</resume>');
     expect(user.match(/<resume>/g)).toHaveLength(1);

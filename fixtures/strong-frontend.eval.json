@@ -21,6 +21,15 @@
           "age",
           "marital"
         ]
+      },
+      {
+        "id": "employment gap",
+        "anyOf": [
+          "employment gap",
+          "gap in employment",
+          "unemploy*",
+          "career gap"
+        ]
       }
     ],
     "strengthEvidenceNotIn": [
