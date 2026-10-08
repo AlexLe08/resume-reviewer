@@ -2,6 +2,7 @@
   "description": "Good experience, but the most recent role ended in March 2024. A reviewer must flag the gap as at least medium severity.",
   "resume": "recent-gap.txt",
   "expect": {
+    "verdictIn": ["maybe", "no"],
     "mustMention": [
       {
         "id": "employment gap",
