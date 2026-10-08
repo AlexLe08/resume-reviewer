@@ -377,6 +377,20 @@ p {
   -webkit-box-decoration-break: clone;
 }
 
+.evidence-unverified > span:first-child {
+  color: var(--muted);
+  font-style: italic;
+  text-decoration: underline dashed var(--caution);
+  text-underline-offset: 3px;
+}
+
+.evidence-note {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: 0.8125rem;
+  color: var(--caution);
+}
+
 .usage {
   display: flex;
   flex-wrap: wrap;

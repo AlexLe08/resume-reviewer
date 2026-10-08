@@ -34,7 +34,7 @@ export function ReviewWorkspace() {
         </p>
       )}
 
-      {state.error && (
+      {state.error && !state.extracted && (
         <p role="alert" className="error-banner">
           {state.error}
         </p>

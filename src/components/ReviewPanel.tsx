@@ -1,4 +1,5 @@
 import type { ReviewState } from '@/hooks/useReviewStream';
+import type { GroundedReview } from '@/lib/review/grounding';
 import type { Review } from '@/lib/review/schema';
 
 const VERDICT_TEXT: Record<Review['wouldAdvance'], string> = {
@@ -28,13 +29,21 @@ export function ReviewPanel({ state }: { state: ReviewState }) {
         </p>
       )}
 
+      {state.status === 'error' && !state.review && (
+        <p role="alert" className="error-banner">
+          {state.error}
+        </p>
+      )}
+
       {state.review && <ReviewBody review={state.review} />}
 
       {state.call && (
         <dl className="usage">
           <div>
             <dt>Model</dt>
-            <dd>{state.call.model}</dd>
+            <dd>
+              {state.call.provider} / {state.call.model}
+            </dd>
           </div>
           <div>
             <dt>Tokens in / out / thinking</dt>
@@ -47,6 +56,14 @@ export function ReviewPanel({ state }: { state: ReviewState }) {
             <dt>Time</dt>
             <dd>{(state.call.latencyMs / 1000).toFixed(1)} s</dd>
           </div>
+          {state.review && state.review.grounding.quotes > 0 && (
+            <div>
+              <dt>Quotes found in resume</dt>
+              <dd>
+                {state.review.grounding.found} of {state.review.grounding.quotes}
+              </dd>
+            </div>
+          )}
           {state.call.estimatedCostUsd > 0 && (
             <div>
               <dt>Estimated cost</dt>
@@ -59,7 +76,7 @@ export function ReviewPanel({ state }: { state: ReviewState }) {
   );
 }
 
-function ReviewBody({ review }: { review: Review }) {
+function ReviewBody({ review }: { review: GroundedReview }) {
   const issues = [...review.issues].sort(
     (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity],
   );
@@ -78,7 +95,7 @@ function ReviewBody({ review }: { review: Review }) {
                 <p className="finding-title">
                   <span className="severity-tag">{issue.severity}</span> {issue.problem}
                 </p>
-                {issue.evidence && <Evidence text={issue.evidence} />}
+                <Evidence text={issue.evidence} found={issue.evidenceFound} />
                 <p className="finding-suggestion">{issue.suggestion}</p>
               </li>
             ))}
@@ -93,7 +110,7 @@ function ReviewBody({ review }: { review: Review }) {
             {review.strengths.map((strength, i) => (
               <li key={i} className="finding">
                 <p className="finding-title">{strength.point}</p>
-                <Evidence text={strength.evidence} />
+                <Evidence text={strength.evidence} found={strength.evidenceFound} />
               </li>
             ))}
           </ul>
@@ -103,10 +120,22 @@ function ReviewBody({ review }: { review: Review }) {
   );
 }
 
-function Evidence({ text }: { text: string }) {
+function Evidence({ text, found }: { text: string; found: boolean }) {
+  if (!text) return null;
+  if (found) {
+    return (
+      <blockquote className="evidence">
+        <mark>{text}</mark>
+      </blockquote>
+    );
+  }
   return (
-    <blockquote className="evidence">
-      <mark>{text}</mark>
+    <blockquote className="evidence evidence-unverified">
+      <span>{text}</span>
+      <span className="evidence-note">
+        This quote isn&apos;t in your resume word-for-word. Check the point against what you actually
+        wrote.
+      </span>
     </blockquote>
   );
 }

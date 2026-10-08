@@ -17,4 +17,6 @@ export interface TokenUsage {
 export interface StreamChunk {
   text: string;
   usage?: TokenUsage;
+  /** The model the provider reports actually served this response. */
+  model?: string;
 }

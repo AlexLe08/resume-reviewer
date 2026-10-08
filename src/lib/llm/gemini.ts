@@ -34,6 +34,7 @@ export async function* streamStructuredGemini(
     const usage = chunk.usageMetadata;
     yield {
       text: chunk.text ?? '',
+      model: chunk.modelVersion,
       usage: usage
         ? {
             inputTokens: usage.promptTokenCount ?? 0,

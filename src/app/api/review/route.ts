@@ -1,8 +1,16 @@
 import { hasUsableText, runChecks } from '@/lib/checks';
 import { getEnv } from '@/lib/env';
-import { describeLlmError, modelName, streamStructured, type TokenUsage } from '@/lib/llm';
+import {
+  currentPrices,
+  describeLlmError,
+  modelName,
+  providerName,
+  streamStructured,
+  type TokenUsage,
+} from '@/lib/llm';
 import { estimateCostUsd, logCall, type CallRecord } from '@/lib/llm/usage';
 import { extractPdfText, looksLikePdf, type ExtractedDocument } from '@/lib/pdf/extract';
+import { annotateGrounding } from '@/lib/review/grounding';
 import { PERSONAS, type Persona } from '@/lib/review/personas';
 import { buildReviewPrompt } from '@/lib/review/prompt';
 import { parseReview, reviewJsonSchema } from '@/lib/review/schema';
@@ -28,7 +36,7 @@ export async function POST(request: Request): Promise<Response> {
     getEnv();
   } catch (err) {
     console.error('config_error', err instanceof Error ? err.message : err);
-    return jsonError(500, 'The server is missing its AI configuration. See .env.example.');
+    return jsonError(500, 'The server configuration is invalid. Check the terminal and .env.example.');
   }
 
   const upload = await readUpload(request);
@@ -100,6 +108,7 @@ async function runReview(
   const started = performance.now();
   let raw = '';
   let usage: TokenUsage = { inputTokens: 0, outputTokens: 0, thinkingTokens: 0 };
+  let servedModel: string | undefined;
 
   try {
     const chunks = streamStructured({
@@ -115,6 +124,7 @@ async function runReview(
         send({ type: 'review_delta', text: chunk.text });
       }
       if (chunk.usage) usage = chunk.usage;
+      if (chunk.model) servedModel = chunk.model;
     }
   } catch (err) {
     if (signal.aborted) return;
@@ -123,16 +133,13 @@ async function runReview(
     return;
   }
 
-  const env = getEnv();
   const call: CallRecord = {
-    model: modelName(),
+    provider: providerName(),
+    model: servedModel ?? modelName(),
     personaId: persona.id,
     latencyMs: Math.round(performance.now() - started),
     ...usage,
-    estimatedCostUsd: estimateCostUsd(usage, {
-      inputPerMTok: env.LLM_INPUT_PRICE_PER_MTOK,
-      outputPerMTok: env.LLM_OUTPUT_PRICE_PER_MTOK,
-    }),
+    estimatedCostUsd: estimateCostUsd(usage, currentPrices()),
   };
   // Log before validating, so failed calls still show up in usage numbers.
   logCall(call);
@@ -149,7 +156,9 @@ async function runReview(
     return;
   }
 
-  send({ type: 'review_done', personaId: persona.id, review: parsed.data, call });
+  const review = annotateGrounding(parsed.data, doc.text);
+  console.info(JSON.stringify({ event: 'review_grounding', personaId: persona.id, ...review.grounding }));
+  send({ type: 'review_done', personaId: persona.id, review, call });
 }
 
 async function readUpload(request: Request): Promise<Uint8Array | Response> {

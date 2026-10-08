@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CheckResult } from '@/lib/checks';
 import type { CallRecord } from '@/lib/llm/usage';
-import type { Review } from '@/lib/review/schema';
+import type { GroundedReview } from '@/lib/review/grounding';
 import type { StreamEvent } from '@/lib/stream/events';
 import { readNdjson } from '@/lib/stream/ndjson';
 
@@ -15,7 +15,7 @@ export interface ReviewState {
   persona?: { id: string; name: string };
   /** How much of the review has streamed in so far. Drives the progress text. */
   liveChars: number;
-  review?: Review;
+  review?: GroundedReview;
   call?: CallRecord;
   error?: string;
 }
@@ -64,7 +64,8 @@ export function useReviewStream() {
     try {
       const res = await fetch('/api/review', { method: 'POST', body, signal: controller.signal });
       if (!res.ok || !res.body) {
-        setState((s) => ({ ...s, status: 'error', error: await readErrorMessage(res) }));
+        const message = await readErrorMessage(res);
+        setState((s) => ({ ...s, status: 'error', error: message }));
         return;
       }
 

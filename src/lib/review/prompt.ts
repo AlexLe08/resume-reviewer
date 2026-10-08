@@ -9,9 +9,14 @@ export interface ReviewPrompt {
   user: string;
 }
 
-export function buildReviewPrompt(persona: Persona, resumeText: string): ReviewPrompt {
+export function buildReviewPrompt(
+  persona: Persona,
+  resumeText: string,
+  today: Date = new Date(),
+): ReviewPrompt {
   const system = [
     `You review resumes. ${persona.description}`,
+    `Today's date is ${today.toISOString().slice(0, 10)}. Use it when judging dates, gaps, and whether experience is current.`,
     '',
     'What you pay attention to:',
     ...persona.focus.map((item) => `- ${item}`),

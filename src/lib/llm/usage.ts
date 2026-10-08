@@ -1,10 +1,11 @@
 import type { TokenUsage } from './types';
 
 export interface CallRecord extends TokenUsage {
+  provider: string;
   model: string;
   personaId: string;
   latencyMs: number;
-  /** What this call would cost at the configured paid-tier prices. 0 on the free tier. */
+  /** What this call would cost at the configured paid-tier prices. 0 for local and free use. */
   estimatedCostUsd: number;
 }
 
