@@ -51,8 +51,8 @@ async function main(): Promise<void> {
     { dir: path.join(root, 'fixtures'), prefix: '' },
     { dir: path.join(root, 'fixtures', 'private'), prefix: 'private/' },
   ]);
-  const fixtures = values.only ? all.filter((f) => f.name.includes(values.only ?? '')) : all;
-  if (fixtures.length === 0) {
+  const filters = values.only?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+  const fixtures = filters.length > 0 ? all.filter((f) => filters.some((name) => f.name.includes(name))) : all;  if (fixtures.length === 0) {
     throw new Error(values.only ? `No fixture name contains "${values.only}".` : 'No *.eval.json files found in fixtures/.');
   }
 

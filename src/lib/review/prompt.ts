@@ -38,8 +38,7 @@ export function buildReviewPrompt(
   // not from the user's file, so the model may rely on them.
   const factsBlock =
     facts.length > 0
-      ? `\n\nFacts computed by code from the resume. They are accurate, so rely on them rather than working them out yourself, but they are not part of the resume: never quote them as evidence. Quote the resume text they refer to instead.\n${facts.map((f) => `- ${f}`).join('\n')}`
-      : '';
+      ? `\n\nFacts computed by code from the resume (accurate; rely on them rather than working them out yourself):\n${facts.map((f) => `- ${f}`).join('\n')}`      : '';
   const user = `Review this resume.\n\n<resume>\n${sanitizeResumeText(resumeText)}\n</resume>${factsBlock}`;
 
   return { system, user };
