@@ -147,7 +147,10 @@ export function checkTimeline(timeline: Timeline): CheckResult {
  */
 export function timelineFacts(timeline: Timeline): string[] {
   if (timeline.ranges.length === 0) return [];
-  if (timeline.current) return ['The resume lists a current role (an end date of "Present" or later).'];
+  // Only state facts worth reacting to. A sentence like "the resume lists a
+  // current role" adds nothing, and evals showed it crowding out other
+  // feedback (typo detection dropped from 3/3 to 3/11 with it present).
+  if (timeline.current) return [];
   const { latestRange, monthsSinceLatestEnd } = timeline;
   if (latestRange === null || monthsSinceLatestEnd === null) return [];
   return [

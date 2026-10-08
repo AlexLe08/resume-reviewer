@@ -86,6 +86,10 @@ describe('timelineFacts', () => {
   it('says nothing when no dates were found', () => {
     expect(timelineFacts(analyzeTimeline('No dates', TODAY))).toEqual([]);
   });
+
+    it('says nothing when there is a current role', () => {
+    expect(timelineFacts(analyzeTimeline('Mar 2022 – Present', TODAY))).toEqual([]);
+  });
 });
 
 describe('formatDuration', () => {
