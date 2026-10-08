@@ -4,6 +4,7 @@ export type ProviderErrorCode =
   | 'structured_output_unsupported'
   | 'bad_response'
   | 'http';
+
 /**
  * Errors our own provider code throws. `status` mirrors an HTTP status where
  * there is one, so the retry logic treats these like any other API error.

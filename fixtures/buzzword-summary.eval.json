@@ -1,0 +1,45 @@
+{
+  "description": "Solid experience undercut by a buzzword-stuffed summary. A reviewer must call out the summary and must not cite it as a strength.",
+  "resume": "buzzword-summary.txt",
+  "expect": {
+    "mustMention": [
+      {
+        "id": "buzzword summary",
+        "anyOf": [
+          "buzzword*",
+          "vague",
+          "generic",
+          "cliche*",
+          "clich\u00e9*",
+          "jargon",
+          "fluff*",
+          "filler",
+          "empty"
+        ]
+      }
+    ],
+    "mustNotMention": [
+      {
+        "id": "protected characteristics",
+        "anyOf": [
+          "gender",
+          "race",
+          "racial",
+          "ethnic*",
+          "religio*",
+          "nationality",
+          "pregnan*",
+          "disabilit*",
+          "age",
+          "marital"
+        ]
+      }
+    ],
+    "strengthEvidenceNotIn": [
+      {
+        "id": "summary",
+        "text": "Results-driven, visionary full-stack thought leader and passionate innovator who leverages cutting-edge synergies to drive best-in-class, transformative digital experiences. Dynamic self-starter with a proven track record of thinking outside the box and delivering world-class value in fast-paced, agile environments."
+      }
+    ]
+  }
+}

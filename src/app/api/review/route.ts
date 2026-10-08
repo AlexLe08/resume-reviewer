@@ -1,19 +1,8 @@
 import { hasUsableText, runChecks } from '@/lib/checks';
 import { getEnv } from '@/lib/env';
-import {
-  currentPrices,
-  describeLlmError,
-  modelName,
-  providerName,
-  streamStructured,
-  type TokenUsage,
-} from '@/lib/llm';
-import { estimateCostUsd, logCall, type CallRecord } from '@/lib/llm/usage';
 import { extractPdfText, looksLikePdf, type ExtractedDocument } from '@/lib/pdf/extract';
-import { annotateGrounding } from '@/lib/review/grounding';
 import { PERSONAS, type Persona } from '@/lib/review/personas';
-import { buildReviewPrompt } from '@/lib/review/prompt';
-import { parseReview, reviewJsonSchema } from '@/lib/review/schema';
+import { runReview } from '@/lib/review/run';
 import { encodeEvent, type StreamEvent } from '@/lib/stream/events';
 
 // pdf.js needs Node APIs, so this route can't run on the edge runtime.
@@ -75,7 +64,7 @@ export async function POST(request: Request): Promise<Response> {
           return;
         }
 
-        await runReview(doc, persona, send, request.signal);
+        await streamReview(doc, persona, send, request.signal);
       } finally {
         if (!closed) {
           closed = true;
@@ -96,7 +85,8 @@ export async function POST(request: Request): Promise<Response> {
   });
 }
 
-async function runReview(
+/** Adapts the shared review pipeline to our streaming event protocol. */
+async function streamReview(
   doc: ExtractedDocument,
   persona: Persona,
   send: Send,
@@ -104,61 +94,23 @@ async function runReview(
 ): Promise<void> {
   send({ type: 'review_started', personaId: persona.id, personaName: persona.name });
 
-  const { system, user } = buildReviewPrompt(persona, doc.text);
-  const started = performance.now();
-  let raw = '';
-  let usage: TokenUsage = { inputTokens: 0, outputTokens: 0, thinkingTokens: 0 };
-  let servedModel: string | undefined;
+  const outcome = await runReview(doc, persona, {
+    signal,
+    onDelta: (text) => send({ type: 'review_delta', text }),
+  });
 
-  try {
-    const chunks = streamStructured({
-      system,
-      user,
-      jsonSchema: reviewJsonSchema(),
-      temperature: 0.4,
-      signal,
-    });
-    for await (const chunk of chunks) {
-      if (chunk.text) {
-        raw += chunk.text;
-        send({ type: 'review_delta', text: chunk.text });
-      }
-      if (chunk.usage) usage = chunk.usage;
-      if (chunk.model) servedModel = chunk.model;
-    }
-  } catch (err) {
-    if (signal.aborted) return;
-    console.error('llm_call_failed', err instanceof Error ? err.message : err);
-    send({ type: 'error', stage: 'review', ...describeLlmError(err) });
+  if (outcome.ok) {
+    send({ type: 'review_done', personaId: persona.id, review: outcome.review, call: outcome.call });
     return;
   }
+  if (outcome.kind === 'aborted') return;
 
-  const call: CallRecord = {
-    provider: providerName(),
-    model: servedModel ?? modelName(),
-    personaId: persona.id,
-    latencyMs: Math.round(performance.now() - started),
-    ...usage,
-    estimatedCostUsd: estimateCostUsd(usage, currentPrices()),
-  };
-  // Log before validating, so failed calls still show up in usage numbers.
-  logCall(call);
-
-  const parsed = parseReview(raw);
-  if (!parsed.success) {
-    console.error('review_validation_failed', parsed.reason);
-    send({
-      type: 'error',
-      stage: 'review',
-      message: 'The reviewer returned an incomplete result. Try again.',
-      retryable: true,
-    });
-    return;
-  }
-
-  const review = annotateGrounding(parsed.data, doc.text);
-  console.info(JSON.stringify({ event: 'review_grounding', personaId: persona.id, ...review.grounding }));
-  send({ type: 'review_done', personaId: persona.id, review, call });
+  send({
+    type: 'error',
+    stage: 'review',
+    message: outcome.message,
+    retryable: outcome.kind === 'llm_error' ? outcome.retryable : true,
+  });
 }
 
 async function readUpload(request: Request): Promise<Uint8Array | Response> {

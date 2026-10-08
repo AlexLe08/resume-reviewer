@@ -1,0 +1,26 @@
+Priya Raman
+Seattle, WA | (206) 555-0142 | priya.raman@example.com | github.com/priyaraman-dev
+
+SUMMARY
+Frontend engineer with 7 years of experience building accessible, high-traffic React applications for retail and travel products.
+
+EXPERIENCE
+Senior Frontend Engineer | Northwind Travel | Seattle, WA | Mar 2022 – Present
+● Led the rebuild of the booking flow in React and TypeScript, cutting checkout abandonment from 38% to 27% over two quarters.
+● Introduced a shared component library adopted by 9 product teams, reducing duplicate UI code by roughly 40%.
+● Reduced median mobile page load from 4.1 s to 2.3 s by splitting bundles and moving image resizing to the CDN.
+● Mentored 4 junior engineers; two were promoted within 18 months.
+
+Frontend Engineer | Contoso Retail | Portland, OR | Jun 2019 – Feb 2022
+● Built the product search interface serving 2 million monthly users, including faceted filters and keyboard navigation.
+● Raised automated test coverage from 35% to 85% with Jest and Playwright, and added visual regression checks to CI.
+● Partnered with design to fix 120+ accessibility issues, reaching WCAG 2.1 AA on all checkout pages.
+
+Junior Web Developer | Fabrikam Agency | Portland, OR | Jul 2018 – May 2019
+● Delivered 14 marketing sites for clients using React and headless CMS integrations.
+
+SKILLS
+TypeScript, JavaScript, React, Next.js, Node.js, GraphQL, Jest, Playwright, Accessibility (WCAG), Web Performance
+
+EDUCATION
+B.S. Computer Science | University of Washington | 2018

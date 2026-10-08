@@ -34,11 +34,12 @@ Set `LLM_PROVIDER` in `.env.local`:
 ```bash
 brew install ollama
 ollama serve                 # leave running in its own terminal
-ollama pull gemma4:e4b-it-q4_K_M # ~8B model at 4-bit, fits 16 GB Apple Silicon
+ollama pull gemma4:e4b-it-q4_K_M   # ~8B model at 4-bit (GGUF), fits 16 GB Apple Silicon
 ```
 
 Notes:
 
+- Use GGUF model tags (e.g. ending in `-q4_K_M`). Homebrew's Ollama can't do structured output with the MLX tags Macs pull by default, and fails with HTTP 501.
 - Run Ollama natively, not in Docker. Containers on macOS can't use the Apple Silicon GPU.
 - On a 16 GB Mac, stop Colima / Docker Desktop / OrbStack while reviewing; an 8B model plus a container VM plus your browser is tight.
 - The first request after starting Ollama loads the model into memory and is slow. Later ones are faster until Ollama unloads it after a few idle minutes.
@@ -115,3 +116,29 @@ With `LLM_PROVIDER=ollama`, resumes never leave your machine.
 - **API rejects the response schema.** Gemini supports a subset of JSON Schema. Check `reviewJsonSchema()` output (e.g. `additionalProperties`) against the current Gemini structured-output docs.
 - **Model not found.** Model names change. Check AI Studio for current free-tier models and update `GEMINI_MODEL`.
 - **PDF can't be read.** Password-protected and some malformed PDFs fail extraction. Scanned PDFs extract but contain almost no text; the "Selectable text" check flags that.
+
+## Evals
+
+`npm run eval` runs the real review pipeline (the same `runReview` the API route uses) against fixture resumes, several times each, and reports how often each expectation holds.
+
+```bash
+npm run eval                          # every fixture, 3 runs each
+npm run eval -- --runs 1              # quick pass
+npm run eval -- --only recent-gap     # one fixture
+LLM_PROVIDER=mock npm run eval        # check the runner itself, instantly
+```
+
+Each fixture is a resume (`.txt` or `.pdf`) plus a `*.eval.json` file describing what a good review must and must not do:
+
+| Expectation | Meaning |
+| --- | --- |
+| `verdictIn` | Verdicts a reasonable reviewer could give |
+| `mustMention` | Problems that must be raised, by keyword. `minSeverity` limits it to issues at that severity or higher |
+| `mustNotMention` | Words the reviewer must never use (quotes from the resume are not searched) |
+| `strengthEvidenceNotIn` | Passages, like a self-written summary, that must not be quoted as proof of a strength |
+
+Keywords match whole words, case-insensitively; end one with `*` to match a prefix (`quantif*`). Keyword checks reliably catch "never mentioned the gap", but not "mentioned it badly". That needs a model as judge, which comes later.
+
+Real resumes go in `fixtures/private/` (gitignored) with their own `*.eval.json`. Results are written to `eval-results/` (also gitignored, since they quote resume text) with the git commit, so you can compare numbers before and after a prompt change.
+
+On a local 8B model, expect about 90 seconds per review: 5 fixtures × 3 runs is roughly 20 minutes.

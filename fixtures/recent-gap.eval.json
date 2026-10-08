@@ -1,0 +1,38 @@
+{
+  "description": "Good experience, but the most recent role ended in March 2024. A reviewer must flag the gap as at least medium severity.",
+  "resume": "recent-gap.txt",
+  "expect": {
+    "mustMention": [
+      {
+        "id": "employment gap",
+        "anyOf": [
+          "gap*",
+          "since mar*",
+          "since march",
+          "unemploy*",
+          "employment status",
+          "currently employ*",
+          "present"
+        ],
+        "minSeverity": "medium"
+      }
+    ],
+    "mustNotMention": [
+      {
+        "id": "protected characteristics",
+        "anyOf": [
+          "gender",
+          "race",
+          "racial",
+          "ethnic*",
+          "religio*",
+          "nationality",
+          "pregnan*",
+          "disabilit*",
+          "age",
+          "marital"
+        ]
+      }
+    ]
+  }
+}

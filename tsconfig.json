@@ -9,6 +9,7 @@
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
+    "allowUnreachableCode": false,
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -18,7 +19,6 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "allowUnreachableCode": false,
     "plugins": [
       {
         "name": "next"

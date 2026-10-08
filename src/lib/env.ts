@@ -8,7 +8,7 @@ const EnvSchema = z
     // 127.0.0.1 rather than "localhost": Node can resolve localhost to the IPv6
     // address ::1, while Ollama listens on IPv4 by default.
     OLLAMA_BASE_URL: z.url().default('http://127.0.0.1:11434'),
-    OLLAMA_MODEL: z.string().min(1).default('gemma4:e4b'),
+    OLLAMA_MODEL: z.string().min(1).default('gemma4:e4b-it-q4_K_M'),
     /** Context window in tokens. Bigger costs memory; a resume review needs well under this. */
     OLLAMA_NUM_CTX: z.coerce.number().int().positive().default(8192),
 

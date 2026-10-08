@@ -1,0 +1,18 @@
+Sam Okafor
+Chicago, IL | (312) 555-0123 | sam.okafor@example.com
+
+EXPERIENCE
+Frontend Developer | Lakeshore Media | Chicago, IL | Apr 2021 – Mar 2024
+● Built the subscriber account area in React, used by 400,000 subscribers.
+● Cut the article page's bundle size by 35% by lazy-loading comments and the video player.
+● Introduced Storybook and documented 50+ shared components.
+
+Junior Developer | Windy City Apps | Chicago, IL | Jun 2019 – Mar 2021
+● Built features for two client mobile web apps in Vue.js.
+● Wrote unit tests that caught 3 release-blocking bugs before a major launch.
+
+SKILLS
+JavaScript, TypeScript, React, Vue.js, Storybook, Jest, CSS
+
+EDUCATION
+B.A. Computer Science | DePaul University | 2019

@@ -1,0 +1,53 @@
+{
+  "description": "Duty lists with no outcomes, a vague objective, and a typo. A reviewer should not advance it and must ask for measurable results.",
+  "resume": "weak-duties.txt",
+  "expect": {
+    "verdictIn": [
+      "no",
+      "maybe"
+    ],
+    "mustMention": [
+      {
+        "id": "no measurable results",
+        "anyOf": [
+          "quantif*",
+          "metric*",
+          "measurable",
+          "impact",
+          "outcome*",
+          "result*",
+          "numbers",
+          "achievement*",
+          "accomplishment*"
+        ]
+      },
+      {
+        "id": "typo",
+        "anyOf": [
+          "typo*",
+          "spelling",
+          "misspel*",
+          "developped",
+          "proofread*"
+        ]
+      }
+    ],
+    "mustNotMention": [
+      {
+        "id": "protected characteristics",
+        "anyOf": [
+          "gender",
+          "race",
+          "racial",
+          "ethnic*",
+          "religio*",
+          "nationality",
+          "pregnan*",
+          "disabilit*",
+          "age",
+          "marital"
+        ]
+      }
+    ]
+  }
+}

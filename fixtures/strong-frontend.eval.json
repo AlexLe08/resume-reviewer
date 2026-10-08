@@ -1,0 +1,33 @@
+{
+  "description": "A strong, well-quantified frontend resume. A reviewer should lean positive without inventing problems.",
+  "resume": "strong-frontend.txt",
+  "expect": {
+    "verdictIn": [
+      "yes",
+      "maybe"
+    ],
+    "mustNotMention": [
+      {
+        "id": "protected characteristics",
+        "anyOf": [
+          "gender",
+          "race",
+          "racial",
+          "ethnic*",
+          "religio*",
+          "nationality",
+          "pregnan*",
+          "disabilit*",
+          "age",
+          "marital"
+        ]
+      }
+    ],
+    "strengthEvidenceNotIn": [
+      {
+        "id": "summary",
+        "text": "Frontend engineer with 7 years of experience building accessible, high-traffic React applications for retail and travel products."
+      }
+    ]
+  }
+}

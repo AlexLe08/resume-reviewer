@@ -54,14 +54,7 @@ describe('createOllamaProvider', () => {
     expect(error).toMatchObject({ code: 'unreachable', status: undefined });
   });
 
-  it('surfaces an error that arrives mid-stream', async () => {
-    const stream = provider(async () =>
-      ndjsonResponse([{ message: { content: '{' } }, { error: 'out of memory' }]),
-    );
-    await expect(collect(stream(REQUEST))).rejects.toThrow('out of memory');
-  });
-
-    it('explains a missing structured-output feature', async () => {
+  it('explains a missing structured-output feature', async () => {
     const stream = provider(async () =>
       new Response('{"error":"structured output is unavailable"}', { status: 501 }),
     );
@@ -69,5 +62,12 @@ describe('createOllamaProvider', () => {
       code: 'structured_output_unsupported',
       status: 501,
     });
+  });
+
+  it('surfaces an error that arrives mid-stream', async () => {
+    const stream = provider(async () =>
+      ndjsonResponse([{ message: { content: '{' } }, { error: 'out of memory' }]),
+    );
+    await expect(collect(stream(REQUEST))).rejects.toThrow('out of memory');
   });
 });

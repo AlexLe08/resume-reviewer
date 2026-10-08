@@ -1,5 +1,3 @@
-import { extractText, getDocumentProxy } from 'unpdf';
-
 export interface ExtractedDocument {
   text: string;
   pageCount: number;
@@ -21,6 +19,9 @@ export function looksLikePdf(bytes: Uint8Array): boolean {
  * layouts. That change stays inside this file.
  */
 export async function extractPdfText(bytes: Uint8Array): Promise<ExtractedDocument> {
+  // Loaded on demand: unpdf is an ES module, and the eval script runs as
+  // CommonJS. A dynamic import works in both, and costs nothing in Next.js.
+  const { extractText, getDocumentProxy } = await import('unpdf');
   const pdf = await getDocumentProxy(bytes);
   const { totalPages, text } = await extractText(pdf, { mergePages: true });
   return { text: normalizeWhitespace(text), pageCount: totalPages };

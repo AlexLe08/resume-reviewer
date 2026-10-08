@@ -1,0 +1,22 @@
+Mark Delaney
+mark.delaney@example.com | (555) 010-7788
+
+OBJECTIVE
+Hard working and motivated individual looking for a challenging position where I can grow my skills.
+
+WORK EXPERIENCE
+Web Developer | Lakeside Insurance | Jan 2021 – Present
+● Responsible for working on the company website.
+● Developped new pages when needed.
+● Attended daily meetings with the team.
+● Fixed bugs that were assigned to me.
+
+IT Support Technician | Lakeside Insurance | Mar 2018 – Dec 2020
+● Helped users with computer problems.
+● Responsible for setting up new laptops.
+
+SKILLS
+HTML, CSS, JavaScript, jQuery, Microsoft Office, team player, detail oriented
+
+EDUCATION
+Associate Degree, Information Technology | Lakeside Community College
