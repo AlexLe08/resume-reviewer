@@ -8,7 +8,7 @@
  *   LLM_PROVIDER=gemini npm run eval      override a setting for one run
  */
 import { execSync } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { getEnv } from '@/lib/env';
@@ -18,6 +18,7 @@ import { formatSummary, summarize, type RunRecord } from '@/lib/eval/report';
 import { modelName, providerName } from '@/lib/llm';
 import { PERSONAS, type PersonaId } from '@/lib/review/personas';
 import { runReview } from '@/lib/review/run';
+import type { GroundedReview } from '@/lib/review/grounding';
 
 async function main(): Promise<void> {
   // Settings already in the shell win over .env.local, so one-off overrides work.
@@ -32,8 +33,14 @@ async function main(): Promise<void> {
       runs: { type: 'string', default: '3' },
       only: { type: 'string' },
       persona: { type: 'string', default: 'recruiter' },
+      rescore: { type: 'string' },
     },
   });
+
+    if (values.rescore) {
+    await rescore(path.resolve(values.rescore), process.cwd());
+    return;
+  }
 
   const runs = Number(values.runs);
   if (!Number.isInteger(runs) || runs < 1 || runs > 20) {
@@ -47,10 +54,7 @@ async function main(): Promise<void> {
   getEnv(); // Fail fast on bad configuration, before any slow work.
 
   const root = process.cwd();
-  const all = await findFixtures([
-    { dir: path.join(root, 'fixtures'), prefix: '' },
-    { dir: path.join(root, 'fixtures', 'private'), prefix: 'private/' },
-  ]);
+  const all = await findFixtures(fixtureSources(root));
   const filters = values.only?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
   const fixtures = filters.length > 0 ? all.filter((f) => filters.some((name) => f.name.includes(name))) : all;  if (fixtures.length === 0) {
     throw new Error(values.only ? `No fixture name contains "${values.only}".` : 'No *.eval.json files found in fixtures/.');
@@ -161,6 +165,42 @@ function gitInfo(): { commit: string | null; dirty: boolean | null } {
   } catch {
     return { commit: null, dirty: null };
   }
+}
+
+function fixtureSources(root: string) {
+  return [
+    { dir: path.join(root, 'fixtures'), prefix: '' },
+    { dir: path.join(root, 'fixtures', 'private'), prefix: 'private/' },
+  ];
+}
+
+/**
+ * Re-applies the current fixture expectations to a saved results file, without
+ * calling a model. Use it to check a change to the checks themselves: it lists
+ * every result that flips, so you can confirm each flip is one you intended.
+ */
+async function rescore(file: string, root: string): Promise<void> {
+  const data = JSON.parse(await readFile(file, 'utf8')) as { records: RunRecord[] };
+  const fixtures = new Map((await findFixtures(fixtureSources(root))).map((f) => [f.name, f]));
+  const changes: string[] = [];
+
+  const records = data.records.map((record) => {
+    const fixture = fixtures.get(record.fixture);
+    if (record.status !== 'ok' || !record.review || !fixture) return record;
+    const assertions = checkExpectations(record.review as GroundedReview, fixture.expect);
+    for (const a of assertions) {
+      const before = record.assertions.find((b) => b.kind === a.kind && b.id === a.id);
+      if (before?.passed !== a.passed) {
+        const was = before === undefined ? 'new' : before.passed ? 'pass' : 'fail';
+        changes.push(`  ${record.fixture} #${record.run}  ${a.label}: ${was} → ${a.passed ? 'pass' : 'fail'} (${a.detail})`);
+      }
+    }
+    return { ...record, assertions };
+  });
+
+  console.log(`Rescored ${path.relative(root, file)} against current fixture expectations.\n`);
+  console.log(changes.length > 0 ? `Changed results:\n${changes.join('\n')}` : 'No results changed.');
+  console.log(formatSummary(summarize(records)));
 }
 
 main().catch((err: unknown) => {

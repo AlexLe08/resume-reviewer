@@ -13,7 +13,10 @@
           "unemploy*",
           "employment status",
           "currently employ*",
-          "present"
+          "present",
+          "ended",
+          "time since",
+          "not current"
         ],
         "minSeverity": "medium"
       }
