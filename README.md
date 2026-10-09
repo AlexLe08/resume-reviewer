@@ -142,3 +142,16 @@ Keywords match whole words, case-insensitively; end one with `*` to match a pref
 Real resumes go in `fixtures/private/` (gitignored) with their own `*.eval.json`. Results are written to `eval-results/` (also gitignored, since they quote resume text) with the git commit, so you can compare numbers before and after a prompt change.
 
 On a local 8B model, expect about 90 seconds per review: 5 fixtures × 3 runs is roughly 20 minutes.
+
+## Job matching (Phase 2)
+
+Two steps, both plain structured calls (see `DECISIONS.md` §6 for why this is a workflow, not an agent):
+
+1. `lib/jobs/extract.ts` pulls requirements out of a posting, each tagged `required`, `preferred`, or `bonus`, and checks every one is word for word from the posting.
+2. `lib/jobs/match.ts` matches them against the full resume in one call, with years of experience computed in code. Each requirement comes back `met`, `partial`, or `missing`, with a quote checked against the resume.
+
+Try it on a real pair:
+
+```bash
+npm run match -- --resume fixtures/private/my-resume.pdf --job fixtures/private/jobs/job-1.txt
+```

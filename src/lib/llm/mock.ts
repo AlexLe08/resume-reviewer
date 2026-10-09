@@ -2,7 +2,7 @@ import type { StreamChunk, StructuredStreamRequest } from './types';
 
 export interface MockConfig {
   delayMs: number;
-  /** Builds the object to "return". The composition root decides what that is. */
+  /** Fallback when a request doesn't supply its own `mockResponse`. */
   respond: (request: StructuredStreamRequest) => unknown;
 }
 
@@ -17,7 +17,8 @@ export function createMockProvider(config: MockConfig) {
   return async function* streamStructuredMock(
     request: StructuredStreamRequest,
   ): AsyncGenerator<StreamChunk> {
-    const text = JSON.stringify(config.respond(request), null, 2);
+    const body = request.mockResponse ? request.mockResponse() : config.respond(request);
+    const text = JSON.stringify(body, null, 2);
 
     for (let i = 0; i < text.length; i += CHUNK_SIZE) {
       if (request.signal?.aborted) throw request.signal.reason ?? new Error('Aborted');

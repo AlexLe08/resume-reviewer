@@ -30,7 +30,7 @@ describe('runReview', () => {
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
     expect(streamed.length).toBeGreaterThan(0);
-    expect(outcome.call).toMatchObject({ provider: 'mock', model: 'mock', personaId: 'recruiter' });
+    expect(outcome.call).toMatchObject({ provider: 'mock', model: 'mock', task: 'review:recruiter' });
     // The mock includes exactly one invented quote.
     expect(outcome.review.grounding.found).toBe(outcome.review.grounding.quotes - 1);
   });

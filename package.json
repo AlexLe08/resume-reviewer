@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "eval": "tsx scripts/eval.ts"
+    "eval": "tsx scripts/eval.ts",
+    "spike:tools": "tsx scripts/spikes/tools.ts",
+    "match": "tsx scripts/match.ts"
   },
   "dependencies": {
     "@google/genai": "^1.20.0",

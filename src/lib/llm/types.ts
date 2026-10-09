@@ -5,6 +5,12 @@ export interface StructuredStreamRequest {
   jsonSchema: Record<string, unknown>;
   temperature?: number;
   signal?: AbortSignal;
+  /**
+   * What the mock provider should return for this request. Real providers
+   * ignore it. Each pipeline supplies its own, so the mock can stand in for
+   * reviews, requirement extraction, and matching alike.
+   */
+  mockResponse?: () => unknown;
 }
 
 export interface TokenUsage {

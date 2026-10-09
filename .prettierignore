@@ -1,0 +1,13 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+storybook-static
+coverage
+
+# Lock files
+package-lock.json
+
+# Generated files
+*.tsbuildinfo

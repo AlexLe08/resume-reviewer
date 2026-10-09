@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeTimeline, checkTimeline, findDateRanges, formatDuration, timelineFacts } from './timeline';
+import {
+  analyzeTimeline,
+  checkTimeline,
+  findDateRanges,
+  formatDuration,
+  timelineFacts,
+  totalCoveredMonths,
+} from './timeline';
 
 // Fixed "today" so results don't change as real time passes.
 const TODAY = new Date(2026, 9, 8); // 8 Oct 2026 (months are 0-based in Date)
@@ -40,7 +47,12 @@ describe('findDateRanges', () => {
 describe('analyzeTimeline', () => {
   it('measures the gap since the most recent end date', () => {
     const timeline = analyzeTimeline('Jun 2019 – Mar 2021\nApr 2021 – Mar 2024', TODAY);
-    expect(timeline).toMatchObject({ current: false, latestEnd: { year: 2024, month: 3 }, monthsSinceLatestEnd: 31, latestRange: { raw: 'Apr 2021 – Mar 2024' } });
+    expect(timeline).toMatchObject({
+      current: false,
+      latestEnd: { year: 2024, month: 3 },
+      latestRange: { raw: 'Apr 2021 – Mar 2024' },
+      monthsSinceLatestEnd: 31,
+    });
   });
 
   it('treats any ongoing range as a current role', () => {
@@ -80,16 +92,37 @@ describe('checkTimeline', () => {
 describe('timelineFacts', () => {
   it('states the gap in plain words for the model', () => {
     expect(timelineFacts(analyzeTimeline('Apr 2021 – Mar 2024', TODAY))).toEqual([
-            'The latest dates on the resume are "Apr 2021 – Mar 2024", which ended 2 years and 7 months before today.',
-          ]);
+      'The latest dates on the resume are "Apr 2021 – Mar 2024", which ended 2 years and 7 months before today.',
+    ]);
+  });
+
+  it('says nothing when there is a current role', () => {
+    expect(timelineFacts(analyzeTimeline('Mar 2022 – Present', TODAY))).toEqual([]);
   });
 
   it('says nothing when no dates were found', () => {
     expect(timelineFacts(analyzeTimeline('No dates', TODAY))).toEqual([]);
   });
+});
 
-    it('says nothing when there is a current role', () => {
-    expect(timelineFacts(analyzeTimeline('Mar 2022 – Present', TODAY))).toEqual([]);
+describe('totalCoveredMonths', () => {
+  const months = (text: string) => totalCoveredMonths(analyzeTimeline(text, TODAY), TODAY);
+
+  it('joins back-to-back roles without double-counting the shared month', () => {
+    // Nov 2020 → Dec 2024 is 49 months.
+    expect(months('Nov 2020 – May 2021\nMay 2021 – May 2023\nMay 2023 – Dec 2024')).toBe(49);
+  });
+
+  it('leaves out gaps between roles', () => {
+    expect(months('Jan 2020 – Jan 2021\nJan 2022 – Jan 2023')).toBe(24);
+  });
+
+  it('merges overlapping roles', () => {
+    expect(months('Jan 2020 – Jan 2022\nJun 2021 – Jan 2023')).toBe(36);
+  });
+
+  it('counts a current role up to today', () => {
+    expect(months('Oct 2025 – Present')).toBe(12);
   });
 });
 

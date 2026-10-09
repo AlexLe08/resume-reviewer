@@ -18,7 +18,7 @@ export interface Timeline {
   /** True if any range is ongoing ("Present") or ends in the future (e.g. an expected graduation date). */
   current: boolean;
   latestEnd: YearMonth | null;
-    /** The finished range with the latest end date, kept so its exact text can be quoted. */
+  /** The finished range with the latest end date, kept so its exact text can be quoted. */
   latestRange: (DateRange & { end: YearMonth }) | null;
   /** Whole months from the latest end date to today. Null if there's a current role or no dates at all. */
   monthsSinceLatestEnd: number | null;
@@ -157,6 +157,37 @@ export function timelineFacts(timeline: Timeline): string[] {
     `The latest dates on the resume are "${latestRange.raw}", which ended ` +
       `${formatDuration(monthsSinceLatestEnd)} before today.`,
   ];
+}
+
+/**
+ * Total months covered by the resume's date ranges, with overlaps merged and
+ * gaps between roles left out. "Present" counts up to today.
+ *
+ * Every date range counts, including education, because the parser can't yet
+ * tell sections apart. For "years of experience" that can only overstate,
+ * never understate, so a requirement is never marked missing because of it.
+ */
+export function totalCoveredMonths(timeline: Timeline, today: Date): number {
+  const now = monthIndex({ year: today.getFullYear(), month: today.getMonth() + 1 });
+  const spans = timeline.ranges
+    .map((r) => [monthIndex(r.start), r.end === 'present' ? now : Math.min(monthIndex(r.end), now)] as const)
+    .filter(([start, end]) => end > start)
+    .sort((a, b) => a[0] - b[0]);
+
+  let total = 0;
+  let currentStart: number | null = null;
+  let currentEnd = 0;
+  for (const [start, end] of spans) {
+    if (currentStart === null || start > currentEnd) {
+      if (currentStart !== null) total += currentEnd - currentStart;
+      currentStart = start;
+      currentEnd = end;
+    } else {
+      currentEnd = Math.max(currentEnd, end);
+    }
+  }
+  if (currentStart !== null) total += currentEnd - currentStart;
+  return total;
 }
 
 export function formatDuration(months: number): string {
