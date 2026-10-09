@@ -154,8 +154,8 @@ export function timelineFacts(timeline: Timeline): string[] {
   const { latestRange, monthsSinceLatestEnd } = timeline;
   if (latestRange === null || monthsSinceLatestEnd === null) return [];
   return [
-    `The resume's most recent dates are "${latestRange.raw}": that role ended ` +
-      `${formatDuration(monthsSinceLatestEnd)} before today, and no later or current role is listed.`,
+    `The latest dates on the resume are "${latestRange.raw}", which ended ` +
+      `${formatDuration(monthsSinceLatestEnd)} before today.`,
   ];
 }
 

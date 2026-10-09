@@ -80,7 +80,8 @@ describe('checkTimeline', () => {
 describe('timelineFacts', () => {
   it('states the gap in plain words for the model', () => {
     expect(timelineFacts(analyzeTimeline('Apr 2021 – Mar 2024', TODAY))).toEqual([
-      'The resume\'s most recent dates are "Apr 2021 – Mar 2024": that role ended 2 years and 7 months before today, and no later or current role is listed.',]);
+            'The latest dates on the resume are "Apr 2021 – Mar 2024", which ended 2 years and 7 months before today.',
+          ]);
   });
 
   it('says nothing when no dates were found', () => {
