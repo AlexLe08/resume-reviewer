@@ -31,7 +31,7 @@ export interface FixtureSummary {
   verdicts: Record<Verdict, number>;
   quotes: number;
   quotesFound: number;
-  avgLatencyMs: number | null;
+  medianLatencyMs: number | null;
   avgOutputTokens: number | null;
   assertions: AssertionSummary[];
 }
@@ -65,8 +65,7 @@ export function summarize(records: RunRecord[]): FixtureSummary[] {
       verdicts,
       quotes: sum(valid.map((r) => r.grounding?.quotes ?? 0)),
       quotesFound: sum(valid.map((r) => r.grounding?.found ?? 0)),
-      avgLatencyMs: average(valid.map((r) => r.latencyMs)),
-      avgOutputTokens: average(valid.map((r) => r.outputTokens)),
+      medianLatencyMs: median(valid.map((r) => r.latencyMs)),      avgOutputTokens: average(valid.map((r) => r.outputTokens)),
       assertions: [...assertions.values()],
     };
   });
@@ -81,9 +80,9 @@ export function formatSummary(summaries: FixtureSummary[]): string {
     if (s.validRuns === 0) continue;
     lines.push(`  verdicts     yes ${s.verdicts.yes}, maybe ${s.verdicts.maybe}, no ${s.verdicts.no}`);
     lines.push(`  grounding    ${s.quotesFound}/${s.quotes} quotes found${percent(s.quotesFound, s.quotes)}`);
-    if (s.avgLatencyMs !== null) {
+    if (s.medianLatencyMs !== null) {
       const tokens = s.avgOutputTokens !== null ? `, avg ${Math.round(s.avgOutputTokens).toLocaleString()} output tokens` : '';
-      lines.push(`  time         avg ${(s.avgLatencyMs / 1000).toFixed(1)} s${tokens}`);
+      lines.push(`  time         median ${(s.medianLatencyMs / 1000).toFixed(1)} s${tokens}`);
     }
     for (const a of s.assertions) {
       const mark = a.passed === a.total ? '✓' : a.passed === 0 ? '✗' : '~';
@@ -114,6 +113,13 @@ function sum(values: number[]): number {
 function average(values: (number | undefined)[]): number | null {
   const present = values.filter((v): v is number => v !== undefined);
   return present.length ? sum(present) / present.length : null;
+}
+
+function median(values: (number | undefined)[]): number | null {
+  const sorted = values.filter((v): v is number => v !== undefined).sort((a, b) => a - b);
+  if (sorted.length === 0) return null;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
 }
 
 function percent(part: number, whole: number): string {

@@ -18,7 +18,7 @@ describe('summarize', () => {
   });
 
   it('aggregates grounding and averages over valid runs only', () => {
-    expect(summary).toMatchObject({ quotes: 8, quotesFound: 7, avgLatencyMs: 2000, avgOutputTokens: 200 });
+    expect(summary).toMatchObject({ quotes: 8, quotesFound: 7, medianLatencyMs: 2000, avgOutputTokens: 200 });
   });
 
   it('tallies each assertion across runs', () => {
