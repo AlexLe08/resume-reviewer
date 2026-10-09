@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "eval": "tsx scripts/eval.ts",
     "spike:tools": "tsx scripts/spikes/tools.ts",
-    "match": "tsx scripts/match.ts"
+    "match": "tsx scripts/match.ts",
+    "eval:jobs": "tsx scripts/eval-jobs.ts"
   },
   "dependencies": {
     "@google/genai": "^1.20.0",

@@ -155,3 +155,15 @@ Try it on a real pair:
 ```bash
 npm run match -- --resume fixtures/private/my-resume.pdf --job fixtures/private/jobs/job-1.txt
 ```
+
+### Job matching evals
+
+`npm run eval:jobs` measures job matching against `*.job.json` fixtures in `fixtures/jobs/` and `fixtures/private/jobs/`. Each fixture lists the posting's requirements (word for word, with tiers) and the statuses a careful reader of the resume could give each one. Expected statuses reflect what the resume shows, not what the candidate knows.
+
+```bash
+npm run eval:jobs                         # matching, against the fixture's saved requirement list
+npm run eval:jobs -- --stage extract      # extraction: recall, tiers, no boilerplate, word for word
+npm run eval:jobs -- --stage both --only job-1 --runs 5
+```
+
+Matching runs against the saved list rather than a fresh extraction, so the two steps can't mask each other's failures.

@@ -1,0 +1,23 @@
+About the role
+Northwind Travel is hiring a Senior Frontend Engineer to lead the web experience for our booking platform.
+
+What you'll do
+Own the booking flow end to end, from search results to payment.
+Partner with design and accessibility specialists on new features.
+Review code and help set frontend standards for the team.
+
+Requirements
+6+ years of professional frontend development experience.
+Experience building and maintaining a design system.
+Experience making interfaces usable for people with disabilities.
+Track record of improving web performance.
+Bachelor's degree in Computer Science or equivalent practical experience.
+
+Nice to have
+Hands-on GraphQL API work.
+Native mobile development (iOS or Android).
+
+Benefits
+Medical, dental, and vision coverage. 401(k) matching. Unlimited PTO.
+
+Northwind Travel is an equal opportunity employer and does not discriminate on the basis of race, religion, age, disability, or any other protected characteristic.

@@ -1,0 +1,65 @@
+{
+  "description": "Synthetic posting matched against strong-frontend. Requirements worded differently from the resume, plus responsibilities, benefits, and an equal-opportunity statement that must not be extracted.",
+  "posting": "northwind-frontend.txt",
+  "resume": "../strong-frontend.txt",
+  "extraction": {
+    "mustNotExtract": [
+      "Own the booking flow",
+      "Review code and help set",
+      "Unlimited PTO",
+      "401(k)",
+      "equal opportunity"
+    ]
+  },
+  "requirements": [
+    {
+      "text": "6+ years of professional frontend development experience.",
+      "tier": "required",
+      "accept": [
+        "met"
+      ]
+    },
+    {
+      "text": "Experience building and maintaining a design system.",
+      "tier": "required",
+      "accept": [
+        "met"
+      ]
+    },
+    {
+      "text": "Experience making interfaces usable for people with disabilities.",
+      "tier": "required",
+      "accept": [
+        "met"
+      ]
+    },
+    {
+      "text": "Track record of improving web performance.",
+      "tier": "required",
+      "accept": [
+        "met"
+      ]
+    },
+    {
+      "text": "Bachelor's degree in Computer Science or equivalent practical experience.",
+      "tier": "required",
+      "accept": [
+        "met"
+      ]
+    },
+    {
+      "text": "Hands-on GraphQL API work.",
+      "tier": "bonus",
+      "accept": [
+        "partial"
+      ]
+    },
+    {
+      "text": "Native mobile development (iOS or Android).",
+      "tier": "bonus",
+      "accept": [
+        "missing"
+      ]
+    }
+  ]
+}
