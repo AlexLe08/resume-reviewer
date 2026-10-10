@@ -76,13 +76,22 @@ export function matchFacts(
   if (timeline.ranges.length === 0) return []
   const experience = formatDuration(totalCoveredMonths(timeline, today))
 
+  // The ranges themselves are quoted so the model has real resume text to cite as
+  // evidence. Safe to include: a range only exists if it matched the date pattern.
+  const quoted = timeline.ranges
+    .slice(0, 6)
+    .map((r) => `"${r.raw}"`)
+    .join(', ')
+
   const facts = [
-    `Total time covered by the dated roles on the resume, with overlaps merged and gaps left out: ${experience}. Use this for any "years of experience" requirement.`,
+    `Total time covered by the resume's date ranges (${quoted}), with overlaps merged and gaps left out: ${experience}. ` +
+      'Use this for any "years of experience" requirement, and quote one of those date ranges as its evidence.',
   ]
   for (const r of requirements.filter((req) => ACCEPTS_EXPERIENCE.test(req.text))) {
     facts.push(
       `Requirement ${r.id} accepts equivalent practical experience instead of the credential it names. ` +
-        `The resume shows ${experience} of professional experience. Judge it on that experience, not on the field of any degree listed.`
+        `The resume shows ${experience} of professional experience (the date ranges above). ` +
+        'Judge it on that experience, not on the field of any degree listed, and quote one of those date ranges as its evidence.'
     )
   }
   return facts

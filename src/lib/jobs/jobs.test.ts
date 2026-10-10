@@ -132,6 +132,11 @@ describe('matchFacts', () => {
     expect(facts[1]).toMatch(/^Requirement 7 accepts equivalent practical experience/)
     expect(facts[1]).toContain('4 years')
   })
+
+  it('quotes the date ranges the total came from, so the model can cite real resume text', () => {
+    const [fact] = matchFacts('Jan 2019 – Jan 2021\nJan 2021 – Jan 2024', TODAY)
+    expect(fact).toContain('"Jan 2019 – Jan 2021", "Jan 2021 – Jan 2024"')
+  })
 })
 
 // The whole workflow end to end, with the mock provider standing in for a model.
