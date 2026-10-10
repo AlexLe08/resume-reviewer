@@ -16,12 +16,12 @@ What we decided, why, what we rejected, and the evidence. Newest experiments at 
 
 - **Decision:** Build a resume reviewer with (1) deterministic parsing checks showing what a parser actually extracts, (2) job-description matching, and (3) multiple reviewer personas.
 - **Rejected:** Having the model "act like Workday / Taleo / Greenhouse." There is no free access to these systems and no ground truth to emulate, so the feedback would be confident and invented.
-- **Why:** Recruiter surveys indicate ATS rarely auto-reject on resume content; the real filters are knockout questions on application forms. What *is* real and testable is parsing quality and keyword search. Honesty about this is also the product's differentiator in a crowded space.
+- **Why:** Recruiter surveys indicate ATS rarely auto-reject on resume content; the real filters are knockout questions on application forms. What _is_ real and testable is parsing quality and keyword search. Honesty about this is also the product's differentiator in a crowded space.
 
 ### 1.2 No-spend constraint
 
 - **Decision:** Development must cost nothing. Local models (Ollama) by default; Gemini free tier for comparison only.
-- **Consequence:** Free to *build*, not free to *run* for real users. The hosted product's model access (paid tier with limits, bring-your-own-key, or in-browser) is deferred to Phase 5.
+- **Consequence:** Free to _build_, not free to _run_ for real users. The hosted product's model access (paid tier with limits, bring-your-own-key, or in-browser) is deferred to Phase 5.
 
 ### 1.3 Privacy
 
@@ -50,7 +50,7 @@ What we decided, why, what we rejected, and the evidence. Newest experiments at 
 
 ### 2.4 Structured output, validated
 
-- One Zod schema becomes the JSON Schema sent to the model *and* validates the response. "The API promised" is not the same as "we checked."
+- One Zod schema becomes the JSON Schema sent to the model _and_ validates the response. "The API promised" is not the same as "we checked."
 - Every finding must quote the resume (`evidence`). No 1–10 score: LLM scores are poorly calibrated; a yes/maybe/no verdict plus specific findings is more honest.
 
 ### 2.5 Deterministic code before the LLM
@@ -88,7 +88,7 @@ What we decided, why, what we rejected, and the evidence. Newest experiments at 
 
 ### 3.5 Log what actually happened
 
-- Usage logs record the model the provider *reports* serving the request, not just the one we asked for.
+- Usage logs record the model the provider _reports_ serving the request, not just the one we asked for.
 
 ---
 
@@ -180,23 +180,34 @@ Median time per review: ~78–86 s
 ### 6.1 Spike: can the local model drive a tool loop? (`scripts/spikes/tools.ts`)
 
 - Requirements worded like the resume: 5/5 runs finished, 20/20 verdicts, 15/15 evidence from tools, 0 invalid calls, median 43 s. **Mechanics: yes.**
-- Requirements worded like real postings (synonyms): 17/25. The search tool matched *any* word, so "design system" returned an unrelated accessibility line; the model treated it as a weak match and rarely searched again with different words (1 retry after 5 empty searches).
+- Requirements worded like real postings (synonyms): 17/25. The search tool matched _any_ word, so "design system" returned an unrelated accessibility line; the model treated it as a weak match and rarely searched again with different words (1 retry after 5 empty searches).
 
 ### 6.2 Agent vs. direct baseline (same requirements, same scoring, 5 runs each)
 
-| | Direct (whole resume in prompt, one structured call) | Agent (resume hidden, tools only) |
-|---|---|---|
-| Verdicts correct | **25/25** | 13/25 |
-| Evidence grounded | 20/20 | 15/15 |
-| Median time | **54 s** | 80 s |
-| Design system (synonym) | 5/5 | 0/5 |
-| GraphQL listed only in skills (partial) | 5/5 | 1/5 |
-| Performance (evidence uses other words) | 5/5 | 2/5 |
+|                                         | Direct (whole resume in prompt, one structured call) | Agent (resume hidden, tools only) |
+| --------------------------------------- | ---------------------------------------------------- | --------------------------------- |
+| Verdicts correct                        | **25/25**                                            | 13/25                             |
+| Evidence grounded                       | 20/20                                                | 15/15                             |
+| Median time                             | **54 s**                                             | 80 s                              |
+| Design system (synonym)                 | 5/5                                                  | 0/5                               |
+| GraphQL listed only in skills (partial) | 5/5                                                  | 1/5                               |
+| Performance (evidence uses other words) | 5/5                                                  | 2/5                               |
 
 - **Finding:** The model's judgment is good when it can see the whole resume. The agent's failures came from what the tools showed it, not from reasoning. Hiding a one- to two-page resume behind search created the problem the agent then failed to solve.
 - **Decision:** Job matching is a **workflow**: extract requirements from the posting, then match them in one structured call with the full resume and code-computed facts (e.g. years of experience). The spike is kept as a record, not built on.
 - **Where the agent loop goes instead:** somewhere looking things up and iterating genuinely adds value that one call can't provide. Leading candidate: an evaluator–optimizer loop for rewriting bullets (draft a rewrite → check it against the resume with tools and code → revise until it holds up).
 - **Rejected for now:** semantic (embedding) search to rescue the matching agent. It would fix a problem only the agent design has.
+
+  6.3:
+
+  Extraction: 132/132 found, tiers 132/132, 0 extras, 0 boilerplate, 0 reworded.
+  Matching: 128/132 accepted (97%) at commit 615ae81.
+  The degree: met 2 of 4 runs, and evidence came from the degree line, not from experience.
+
+  6.4
+  Equivalent-experience fact (a6564b9): Chewy #12 went from met 2/4 to 5/5. Northwind’s degree held at 5/5. The evidence is still messy: only 2/5 runs cited work experience, and 1 run quoted the fact itself.
+  Label correction: #18 was mislabeled. It’s an “or” list, and one item is clearly shown. The rule is now “or = any one, and = all”, applied to all 37 requirements; only #18 changed. Verified by rescoring.
+  Next: put quotable date ranges into the experience fact.
 
 ---
 
