@@ -1,8 +1,8 @@
-import { analyzeTimeline, formatDuration, totalCoveredMonths } from '@/lib/checks/timeline';
-import { callStructured, type StructuredOutcome } from '@/lib/llm/structured';
-import type { ExtractedDocument } from '@/lib/pdf/extract';
-import { isQuoteInText } from '@/lib/review/grounding';
-import { buildMatchPrompt } from './prompt';
+import { analyzeTimeline, formatDuration, totalCoveredMonths } from '@/lib/checks/timeline'
+import { callStructured, type StructuredOutcome } from '@/lib/llm/structured'
+import type { ExtractedDocument } from '@/lib/pdf/extract'
+import { isQuoteInText } from '@/lib/review/grounding'
+import { buildMatchPrompt } from './prompt'
 import {
   MATCH_STATUSES,
   MatchSchema,
@@ -12,13 +12,13 @@ import {
   type Requirement,
   type RequirementMatch,
   type Tier,
-} from './schema';
+} from './schema'
 
 export interface MatchOptions {
-  signal?: AbortSignal;
-  log?: boolean;
+  signal?: AbortSignal
+  log?: boolean
   /** Defaults to now. Tests pass a fixed date. */
-  today?: Date;
+  today?: Date
 }
 
 /**
@@ -31,10 +31,15 @@ export interface MatchOptions {
 export async function matchRequirements(
   doc: ExtractedDocument,
   requirements: Requirement[],
-  options: MatchOptions = {},
+  options: MatchOptions = {}
 ): Promise<StructuredOutcome<MatchReport>> {
-  const today = options.today ?? new Date();
-  const { system, user } = buildMatchPrompt(doc.text, requirements, today, matchFacts(doc.text, today));
+  const today = options.today ?? new Date()
+  const { system, user } = buildMatchPrompt(
+    doc.text,
+    requirements,
+    today,
+    matchFacts(doc.text, today, requirements)
+  )
   const outcome = await callStructured({
     task: 'job:match',
     system,
@@ -44,19 +49,43 @@ export async function matchRequirements(
     signal: options.signal,
     log: options.log,
     mockResponse: () => mockMatch(doc.text, requirements),
-  });
-  if (!outcome.ok) return outcome;
-  return { ok: true, data: buildReport(requirements, outcome.data.results, doc.text), call: outcome.call };
+  })
+  if (!outcome.ok) return outcome
+  return {
+    ok: true,
+    data: buildReport(requirements, outcome.data.results, doc.text),
+    call: outcome.call,
+  }
 }
 
-/** Facts the model shouldn't compute itself. Years of experience is the one postings ask for constantly. */
-export function matchFacts(resumeText: string, today: Date): string[] {
-  const timeline = analyzeTimeline(resumeText, today);
-  if (timeline.ranges.length === 0) return [];
-  const months = totalCoveredMonths(timeline, today);
-  return [
-    `Total time covered by the dated roles on the resume, with overlaps merged and gaps left out: ${formatDuration(months)}. Use this for any "years of experience" requirement.`,
-  ];
+// "or equivalent practical experience", "or equivalent experience", "or equivalent work experience", …
+const ACCEPTS_EXPERIENCE = /\bor equivalent\b[^.]*\bexperience\b/i
+
+/**
+ * Facts the model shouldn't work out itself. Years of experience is computed,
+ * and any requirement that accepts experience in place of a credential is
+ * pointed out next to the experience total, because a general rule in the
+ * prompt wasn't enough: the model judged the degree's field instead.
+ */
+export function matchFacts(
+  resumeText: string,
+  today: Date,
+  requirements: Requirement[] = []
+): string[] {
+  const timeline = analyzeTimeline(resumeText, today)
+  if (timeline.ranges.length === 0) return []
+  const experience = formatDuration(totalCoveredMonths(timeline, today))
+
+  const facts = [
+    `Total time covered by the dated roles on the resume, with overlaps merged and gaps left out: ${experience}. Use this for any "years of experience" requirement.`,
+  ]
+  for (const r of requirements.filter((req) => ACCEPTS_EXPERIENCE.test(req.text))) {
+    facts.push(
+      `Requirement ${r.id} accepts equivalent practical experience instead of the credential it names. ` +
+        `The resume shows ${experience} of professional experience. Judge it on that experience, not on the field of any degree listed.`
+    )
+  }
+  return facts
 }
 
 /**
@@ -67,40 +96,44 @@ export function matchFacts(resumeText: string, today: Date): string[] {
 export function buildReport(
   requirements: Requirement[],
   results: { id: number; status: MatchStatus; evidence: string; gap: string }[],
-  resumeText: string,
+  resumeText: string
 ): MatchReport {
-  const byId = new Map<number, (typeof results)[number]>();
-  for (const result of results) if (!byId.has(result.id)) byId.set(result.id, result);
+  const byId = new Map<number, (typeof results)[number]>()
+  for (const result of results) if (!byId.has(result.id)) byId.set(result.id, result)
 
-  const matches: RequirementMatch[] = [];
-  const unanswered: number[] = [];
+  const matches: RequirementMatch[] = []
+  const unanswered: number[] = []
   for (const requirement of requirements) {
-    const result = byId.get(requirement.id);
+    const result = byId.get(requirement.id)
     if (!result) {
-      unanswered.push(requirement.id);
-      continue;
+      unanswered.push(requirement.id)
+      continue
     }
-    const evidence = result.evidence.trim();
+    const evidence = result.evidence.trim()
     matches.push({
       ...requirement,
       status: result.status,
       evidence,
       gap: result.gap.trim(),
       evidenceFound: evidence === '' || isQuoteInText(evidence, resumeText),
-    });
+    })
   }
 
   const counts = Object.fromEntries(
-    TIERS.map((tier) => [tier, Object.fromEntries(MATCH_STATUSES.map((s) => [s, 0]))]),
-  ) as Record<Tier, Record<MatchStatus, number>>;
-  for (const match of matches) counts[match.tier][match.status]++;
+    TIERS.map((tier) => [tier, Object.fromEntries(MATCH_STATUSES.map((s) => [s, 0]))])
+  ) as Record<Tier, Record<MatchStatus, number>>
+  for (const match of matches) counts[match.tier][match.status]++
 
-  return { matches, unanswered, counts };
+  return { matches, unanswered, counts }
 }
 
 /** For the mock provider: the first requirement met with a real resume line, the rest missing. */
 function mockMatch(resumeText: string, requirements: Requirement[]) {
-  const line = resumeText.split('\n').map((l) => l.trim()).find((l) => l.length >= 40) ?? '';
+  const line =
+    resumeText
+      .split('\n')
+      .map((l) => l.trim())
+      .find((l) => l.length >= 40) ?? ''
   return {
     results: requirements.map((r, i) => ({
       id: r.id,
@@ -108,5 +141,5 @@ function mockMatch(resumeText: string, requirements: Requirement[]) {
       evidence: i === 0 ? line : '',
       gap: i === 0 ? '' : '[Mock] Not checked: no model was called.',
     })),
-  };
+  }
 }
