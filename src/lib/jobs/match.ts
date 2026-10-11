@@ -156,14 +156,18 @@ export function buildReport(
     }
     const computedText = computed.get(requirement.id)
     const evidence = computedText ?? result.evidence.trim()
+    const modelGap = result.gap.trim()
+    // For "missing", the explanation is nearly always "it isn't on the resume", so code can say it.
+    const fillGap = modelGap === '' && result.status === 'missing'
     matches.push({
       ...requirement,
       status: result.status,
       evidence,
-      gap: result.gap.trim(),
+      gap: fillGap ? 'Not shown on the resume.' : modelGap,
       evidenceFound:
         computedText !== undefined || evidence === '' || isQuoteInText(evidence, resumeText),
       ...(computedText !== undefined ? { evidenceComputed: true } : {}),
+      ...(fillGap ? { gapFromCode: true } : {}),
     })
   }
 

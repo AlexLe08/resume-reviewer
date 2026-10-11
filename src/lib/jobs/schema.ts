@@ -59,6 +59,8 @@ export interface RequirementMatch extends Requirement {
   evidenceFound: boolean
   /** Evidence written by code from computed facts (e.g. years of experience), not quoted by the model. */
   evidenceComputed?: boolean
+  /** The model left the gap empty and code filled in a default. Kept so evals still count the omission. */
+  gapFromCode?: boolean
 }
 
 export interface MatchReport {

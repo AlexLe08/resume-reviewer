@@ -116,6 +116,15 @@ describe('buildReport', () => {
     expect(report.matches[0]?.evidence).toContain('4 years')
     expect(report.matches[1]?.evidenceComputed).toBeUndefined()
   })
+
+  it('fills an empty gap on a missing requirement and flags that code wrote it', () => {
+    const [match] = buildReport(
+      REQUIREMENTS.slice(1, 2),
+      [{ id: 2, status: 'missing', evidence: '', gap: '' }],
+      RESUME
+    ).matches
+    expect(match).toMatchObject({ gap: 'Not shown on the resume.', gapFromCode: true })
+  })
 })
 
 describe('prompts', () => {

@@ -221,6 +221,7 @@ export function checkMatches(report: MatchReport, fixture: JobFixture): MatchChe
     quotes: quoted.length,
     quotesFound: quoted.filter((m) => m.evidenceFound).length,
     maxEvidenceReuse: Math.max(0, ...reuse.values()),
-    emptyGaps: report.matches.filter((m) => m.status !== 'met' && m.gap === '').length,
+    emptyGaps: report.matches.filter((m) => m.status !== 'met' && (m.gap === '' || m.gapFromCode))
+      .length,
   }
 }
