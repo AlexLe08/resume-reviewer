@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { extractRequirements, finalizeRequirements } from './extract'
-import { buildReport, matchFacts, matchRequirements } from './match'
+import { buildReport, computedEvidence, matchFacts, matchRequirements } from './match'
 import { buildExtractionPrompt, buildMatchPrompt } from './prompt'
 import type { Requirement } from './schema'
 
@@ -92,6 +92,29 @@ describe('buildReport', () => {
       RESUME
     ).matches
     expect(met?.evidenceFound).toBe(false)
+  })
+
+  it('uses computed evidence for requirements answered from computed facts', () => {
+    const reqs: Requirement[] = [
+      { id: 1, text: '5+ years of frontend experience.', tier: 'required', foundInPosting: true },
+      { id: 2, text: 'React expertise.', tier: 'required', foundInPosting: true },
+    ]
+    const resume = 'Jan 2019 – Jan 2023'
+    const computed = computedEvidence(reqs, resume, TODAY)
+    expect([...computed.keys()]).toEqual([1])
+
+    const report = buildReport(
+      reqs,
+      [
+        { id: 1, status: 'missing', evidence: 'Total time covered by…', gap: 'Only 4 years.' },
+        { id: 2, status: 'met', evidence: 'Jan 2019 – Jan 2023', gap: '' },
+      ],
+      resume,
+      computed
+    )
+    expect(report.matches[0]).toMatchObject({ evidenceComputed: true, evidenceFound: true })
+    expect(report.matches[0]?.evidence).toContain('4 years')
+    expect(report.matches[1]?.evidenceComputed).toBeUndefined()
   })
 })
 

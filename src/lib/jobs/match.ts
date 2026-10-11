@@ -53,13 +53,48 @@ export async function matchRequirements(
   if (!outcome.ok) return outcome
   return {
     ok: true,
-    data: buildReport(requirements, outcome.data.results, doc.text),
+    data: buildReport(
+      requirements,
+      outcome.data.results,
+      doc.text,
+      computedEvidence(requirements, doc.text, today)
+    ),
     call: outcome.call,
   }
 }
 
 // "or equivalent practical experience", "or equivalent experience", "or equivalent work experience", …
 const ACCEPTS_EXPERIENCE = /\bor equivalent\b[^.]*\bexperience\b/i
+
+// "5+ years", "3 years", "6+ yrs"
+const STATES_YEARS = /\b\d+\s*\+?\s*(?:years?|yrs)\b/i
+
+/**
+ * Evidence for requirements answered from computed facts. For these, the
+ * calculation IS the evidence: no single resume line proves "8 years", so a
+ * model-chosen quote was always going to be weak or wrong (one-role date
+ * ranges, or our own fact text). The model still decides the status.
+ */
+export function computedEvidence(
+  requirements: Requirement[],
+  resumeText: string,
+  today: Date
+): Map<number, string> {
+  const evidence = new Map<number, string>()
+  const timeline = analyzeTimeline(resumeText, today)
+  if (timeline.ranges.length === 0) return evidence
+  const total = formatDuration(totalCoveredMonths(timeline, today))
+  const ranges = timeline.ranges.map((r) => r.raw).join(', ')
+  for (const r of requirements) {
+    if (STATES_YEARS.test(r.text) || ACCEPTS_EXPERIENCE.test(r.text)) {
+      evidence.set(
+        r.id,
+        `${total} of experience, computed from the dates on the resume (${ranges}).`
+      )
+    }
+  }
+  return evidence
+}
 
 /**
  * Facts the model shouldn't work out itself. Years of experience is computed,
@@ -105,7 +140,8 @@ export function matchFacts(
 export function buildReport(
   requirements: Requirement[],
   results: { id: number; status: MatchStatus; evidence: string; gap: string }[],
-  resumeText: string
+  resumeText: string,
+  computed: Map<number, string> = new Map()
 ): MatchReport {
   const byId = new Map<number, (typeof results)[number]>()
   for (const result of results) if (!byId.has(result.id)) byId.set(result.id, result)
@@ -118,13 +154,16 @@ export function buildReport(
       unanswered.push(requirement.id)
       continue
     }
-    const evidence = result.evidence.trim()
+    const computedText = computed.get(requirement.id)
+    const evidence = computedText ?? result.evidence.trim()
     matches.push({
       ...requirement,
       status: result.status,
       evidence,
       gap: result.gap.trim(),
-      evidenceFound: evidence === '' || isQuoteInText(evidence, resumeText),
+      evidenceFound:
+        computedText !== undefined || evidence === '' || isQuoteInText(evidence, resumeText),
+      ...(computedText !== undefined ? { evidenceComputed: true } : {}),
     })
   }
 
