@@ -212,11 +212,17 @@ Median time per review: ~78–86 s
   6.5
   Quotable date ranges (442d1a8): evidence for computed requirements went from about 2 in 5 to 13/15, with all verdicts at 100%. But the passing quotes were weak (a single 10-month role offered as proof of 6+ years), and the fact was still quoted twice.
   Decision: for requirements that state a number of years or accept equivalent experience, code supplies the evidence: the total plus the date ranges. The model still decides the status.
-  Rejected: restoring the stricter “never quote facts” heading, because it only lowers the failure rate, and the evidence it allows is still weak.
+  Rejected: restoring the stricter “never quote facts” heading, because it only lowers the failure rate, and the evidence it allows is still weak.pr
 
   6.6
   Code-supplied evidence (9e079c5): the new job-matching baseline. 132/132 accepted on all three fixtures, and 89/89 real quotes grounded. Computed evidence doesn’t count toward grounding.
   Empty gaps: they started after the date-range change, appearing in 3 of 8 Chewy runs and always on the same three “missing” bonus requirements. Code now fills them in with a flag, so the eval still counts the omission.
+
+  6.7:
+
+  Job matching in the app. Results are streamed item by item: complete items are read from the model’s JSON as it arrives, validated one by one, and checked with the same code as the final report. A test confirms streamed and final results are identical. The general partial-JSON parsing approach was rejected: it shows half-written text and can’t validate items until they’re whole.
+  Display changes. Calculated evidence is labeled as calculated. A repeated quote is shown in full once, then referred back to. Cancel stops the model.
+  Open items: verdicts can differ between runs of the same input, and job evals have no check against summary-as-evidence.
 
 ---
 

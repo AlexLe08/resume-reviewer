@@ -2,11 +2,14 @@ import { analyzeTimeline, formatDuration, totalCoveredMonths } from '@/lib/check
 import { callStructured, type StructuredOutcome } from '@/lib/llm/structured'
 import type { ExtractedDocument } from '@/lib/pdf/extract'
 import { isQuoteInText } from '@/lib/review/grounding'
+import { createArrayItemReader } from '@/lib/stream/json-items'
 import { buildMatchPrompt } from './prompt'
 import {
   MATCH_STATUSES,
+  MatchItemSchema,
   MatchSchema,
   TIERS,
+  type MatchItem,
   type MatchReport,
   type MatchStatus,
   type Requirement,
@@ -19,6 +22,12 @@ export interface MatchOptions {
   log?: boolean
   /** Defaults to now. Tests pass a fixed date. */
   today?: Date
+  /**
+   * Called with each requirement's result as soon as the model finishes it,
+   * with the same checks as the final report (grounding, computed evidence,
+   * filled gaps). The final report is still the source of truth.
+   */
+  onMatch?: (match: RequirementMatch) => void
 }
 
 /**
@@ -40,6 +49,27 @@ export async function matchRequirements(
     today,
     matchFacts(doc.text, today, requirements)
   )
+  const computed = computedEvidence(requirements, doc.text, today)
+
+  let onDelta: ((text: string) => void) | undefined
+  if (options.onMatch) {
+    const reader = createArrayItemReader('results')
+    const byId = new Map(requirements.map((r) => [r.id, r]))
+    const sent = new Set<number>()
+    const emit = options.onMatch
+    onDelta = (text) => {
+      for (const item of reader.push(text)) {
+        const parsed = MatchItemSchema.safeParse(item)
+        if (!parsed.success) continue
+        const requirement = byId.get(parsed.data.id)
+        // Same rules as buildReport: unknown ids are ignored, the first answer per requirement wins.
+        if (!requirement || sent.has(requirement.id)) continue
+        sent.add(requirement.id)
+        emit(toRequirementMatch(requirement, parsed.data, doc.text, computed.get(requirement.id)))
+      }
+    }
+  }
+
   const outcome = await callStructured({
     task: 'job:match',
     system,
@@ -48,17 +78,13 @@ export async function matchRequirements(
     temperature: 0.2,
     signal: options.signal,
     log: options.log,
+    onDelta,
     mockResponse: () => mockMatch(doc.text, requirements),
   })
   if (!outcome.ok) return outcome
   return {
     ok: true,
-    data: buildReport(
-      requirements,
-      outcome.data.results,
-      doc.text,
-      computedEvidence(requirements, doc.text, today)
-    ),
+    data: buildReport(requirements, outcome.data.results, doc.text, computed),
     call: outcome.call,
   }
 }
@@ -68,33 +94,6 @@ const ACCEPTS_EXPERIENCE = /\bor equivalent\b[^.]*\bexperience\b/i
 
 // "5+ years", "3 years", "6+ yrs"
 const STATES_YEARS = /\b\d+\s*\+?\s*(?:years?|yrs)\b/i
-
-/**
- * Evidence for requirements answered from computed facts. For these, the
- * calculation IS the evidence: no single resume line proves "8 years", so a
- * model-chosen quote was always going to be weak or wrong (one-role date
- * ranges, or our own fact text). The model still decides the status.
- */
-export function computedEvidence(
-  requirements: Requirement[],
-  resumeText: string,
-  today: Date
-): Map<number, string> {
-  const evidence = new Map<number, string>()
-  const timeline = analyzeTimeline(resumeText, today)
-  if (timeline.ranges.length === 0) return evidence
-  const total = formatDuration(totalCoveredMonths(timeline, today))
-  const ranges = timeline.ranges.map((r) => r.raw).join(', ')
-  for (const r of requirements) {
-    if (STATES_YEARS.test(r.text) || ACCEPTS_EXPERIENCE.test(r.text)) {
-      evidence.set(
-        r.id,
-        `${total} of experience, computed from the dates on the resume (${ranges}).`
-      )
-    }
-  }
-  return evidence
-}
 
 /**
  * Facts the model shouldn't work out itself. Years of experience is computed,
@@ -133,17 +132,45 @@ export function matchFacts(
 }
 
 /**
+ * Evidence for requirements answered from computed facts. For these, the
+ * calculation IS the evidence: no single resume line proves "8 years", so a
+ * model-chosen quote was always going to be weak or wrong (one-role date
+ * ranges, or our own fact text). The model still decides the status.
+ */
+export function computedEvidence(
+  requirements: Requirement[],
+  resumeText: string,
+  today: Date
+): Map<number, string> {
+  const evidence = new Map<number, string>()
+  const timeline = analyzeTimeline(resumeText, today)
+  if (timeline.ranges.length === 0) return evidence
+  const total = formatDuration(totalCoveredMonths(timeline, today))
+  // Oldest first, so the list reads as a timeline.
+  const ranges = [...timeline.ranges]
+    .sort((a, b) => a.start.year * 12 + a.start.month - (b.start.year * 12 + b.start.month))
+    .map((r) => r.raw)
+    .join(', ')
+  for (const r of requirements) {
+    if (STATES_YEARS.test(r.text) || ACCEPTS_EXPERIENCE.test(r.text)) {
+      evidence.set(r.id, `${total} of experience (${ranges})`)
+    }
+  }
+  return evidence
+}
+
+/**
  * Joins the model's answers to the requirements and checks them. Duplicate
  * answers keep the first; unknown ids are ignored; skipped requirements are
  * reported rather than silently filled in.
  */
 export function buildReport(
   requirements: Requirement[],
-  results: { id: number; status: MatchStatus; evidence: string; gap: string }[],
+  results: MatchItem[],
   resumeText: string,
   computed: Map<number, string> = new Map()
 ): MatchReport {
-  const byId = new Map<number, (typeof results)[number]>()
+  const byId = new Map<number, MatchItem>()
   for (const result of results) if (!byId.has(result.id)) byId.set(result.id, result)
 
   const matches: RequirementMatch[] = []
@@ -154,21 +181,7 @@ export function buildReport(
       unanswered.push(requirement.id)
       continue
     }
-    const computedText = computed.get(requirement.id)
-    const evidence = computedText ?? result.evidence.trim()
-    const modelGap = result.gap.trim()
-    // For "missing", the explanation is nearly always "it isn't on the resume", so code can say it.
-    const fillGap = modelGap === '' && result.status === 'missing'
-    matches.push({
-      ...requirement,
-      status: result.status,
-      evidence,
-      gap: fillGap ? 'Not shown on the resume.' : modelGap,
-      evidenceFound:
-        computedText !== undefined || evidence === '' || isQuoteInText(evidence, resumeText),
-      ...(computedText !== undefined ? { evidenceComputed: true } : {}),
-      ...(fillGap ? { gapFromCode: true } : {}),
-    })
+    matches.push(toRequirementMatch(requirement, result, resumeText, computed.get(requirement.id)))
   }
 
   const counts = Object.fromEntries(
@@ -177,6 +190,29 @@ export function buildReport(
   for (const match of matches) counts[match.tier][match.status]++
 
   return { matches, unanswered, counts }
+}
+
+/** One requirement's result, checked. Shared by the streamed results and the final report. */
+export function toRequirementMatch(
+  requirement: Requirement,
+  result: MatchItem,
+  resumeText: string,
+  computedText: string | undefined
+): RequirementMatch {
+  const evidence = computedText ?? result.evidence.trim()
+  const modelGap = result.gap.trim()
+  // For "missing", the explanation is nearly always "it isn't on the resume", so code can say it.
+  const fillGap = modelGap === '' && result.status === 'missing'
+  return {
+    ...requirement,
+    status: result.status,
+    evidence,
+    gap: fillGap ? 'Not shown on the resume.' : modelGap,
+    evidenceFound:
+      computedText !== undefined || evidence === '' || isQuoteInText(evidence, resumeText),
+    ...(computedText !== undefined ? { evidenceComputed: true } : {}),
+    ...(fillGap ? { gapFromCode: true } : {}),
+  }
 }
 
 /** For the mock provider: the first requirement met with a real resume line, the rest missing. */

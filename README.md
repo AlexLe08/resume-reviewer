@@ -150,7 +150,9 @@ Two steps, both plain structured calls (see `DECISIONS.md` §6 for why this is a
 1. `lib/jobs/extract.ts` pulls requirements out of a posting, each tagged `required`, `preferred`, or `bonus`, and checks every one is word for word from the posting.
 2. `lib/jobs/match.ts` matches them against the full resume in one call, with years of experience computed in code. Each requirement comes back `met`, `partial`, or `missing`, with a quote checked against the resume.
 
-Try it on a real pair:
+In the app, choose a resume, open **Match to a job**, and paste a posting. Requirements appear as they're found, then each one fills in as it's checked: the server reads complete items out of the model's JSON as it streams (`lib/stream/json-items.ts`), validates each one, and sends it as its own event. The final validated report replaces the streamed items when it arrives.
+
+Try it from the terminal on a real pair:
 
 ```bash
 npm run match -- --resume fixtures/private/my-resume.pdf --job fixtures/private/jobs/job-1.txt

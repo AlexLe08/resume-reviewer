@@ -1,11 +1,18 @@
 import { callStructured, type StructuredOutcome } from '@/lib/llm/structured';
 import { isQuoteInText, normalizeForMatch } from '@/lib/review/grounding';
+import { createArrayItemReader } from '@/lib/stream/json-items';
 import { buildExtractionPrompt } from './prompt';
-import { ExtractionSchema, type Requirement, type Tier } from './schema';
+import { ExtractedItemSchema, ExtractionSchema, type Requirement, type Tier } from './schema';
 
 export interface ExtractOptions {
   signal?: AbortSignal;
   log?: boolean;
+  /**
+   * Called with each requirement as soon as the model finishes writing it,
+   * already numbered and checked against the posting. The final result has the
+   * same requirements with the same ids.
+   */
+  onRequirement?: (requirement: Requirement) => void;
 }
 
 /**
@@ -22,6 +29,21 @@ export async function extractRequirements(
   options: ExtractOptions = {},
 ): Promise<StructuredOutcome<Requirement[]>> {
   const { system, user } = buildExtractionPrompt(posting);
+
+  let onDelta: ((text: string) => void) | undefined;
+  if (options.onRequirement) {
+    const reader = createArrayItemReader('requirements');
+    const collector = createRequirementCollector(posting);
+    const emit = options.onRequirement;
+    onDelta = (text) => {
+      for (const item of reader.push(text)) {
+        const parsed = ExtractedItemSchema.safeParse(item);
+        const requirement = parsed.success ? collector.add(parsed.data) : null;
+        if (requirement) emit(requirement);
+      }
+    };
+  }
+
   const outcome = await callStructured({
     task: 'job:extract',
     system,
@@ -30,24 +52,35 @@ export async function extractRequirements(
     temperature: 0.1,
     signal: options.signal,
     log: options.log,
+    onDelta,
     mockResponse: () => mockExtraction(posting),
   });
   if (!outcome.ok) return outcome;
   return { ok: true, data: finalizeRequirements(outcome.data.requirements, posting), call: outcome.call };
 }
 
-/** Drops empty and duplicate entries, numbers them, and checks each against the posting. */
-export function finalizeRequirements(raw: { text: string; tier: Tier }[], posting: string): Requirement[] {
+/**
+ * Numbers requirements, drops empty and duplicate entries, and checks each
+ * against the posting, one at a time. Streaming and the final result use the
+ * same collector, so ids always agree.
+ */
+export function createRequirementCollector(posting: string) {
   const seen = new Set<string>();
-  const requirements: Requirement[] = [];
-  for (const item of raw) {
-    const text = item.text.trim();
-    const key = normalizeForMatch(text);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    requirements.push({ id: requirements.length + 1, text, tier: item.tier, foundInPosting: isQuoteInText(text, posting) });
-  }
-  return requirements;
+  let nextId = 1;
+  return {
+    add(item: { text: string; tier: Tier }): Requirement | null {
+      const text = item.text.trim();
+      const key = normalizeForMatch(text);
+      if (!key || seen.has(key)) return null;
+      seen.add(key);
+      return { id: nextId++, text, tier: item.tier, foundInPosting: isQuoteInText(text, posting) };
+    },
+  };
+}
+
+export function finalizeRequirements(raw: { text: string; tier: Tier }[], posting: string): Requirement[] {
+  const collector = createRequirementCollector(posting);
+  return raw.map((item) => collector.add(item)).filter((r): r is Requirement => r !== null);
 }
 
 /** For the mock provider: a few real lines from the posting, so downstream code has something to work with. */

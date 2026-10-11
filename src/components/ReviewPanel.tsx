@@ -1,6 +1,7 @@
 import type { ReviewState } from '@/hooks/useReviewStream';
 import type { GroundedReview } from '@/lib/review/grounding';
 import type { Review } from '@/lib/review/schema';
+import { Evidence } from './Evidence';
 
 const VERDICT_TEXT: Record<Review['wouldAdvance'], string> = {
   yes: 'Would move forward',
@@ -117,25 +118,5 @@ function ReviewBody({ review }: { review: GroundedReview }) {
         </section>
       )}
     </>
-  );
-}
-
-function Evidence({ text, found }: { text: string; found: boolean }) {
-  if (!text) return null;
-  if (found) {
-    return (
-      <blockquote className="evidence">
-        <mark>{text}</mark>
-      </blockquote>
-    );
-  }
-  return (
-    <blockquote className="evidence evidence-unverified">
-      <span>{text}</span>
-      <span className="evidence-note">
-        This quote isn&apos;t in your resume word-for-word. Check the point against what you actually
-        wrote.
-      </span>
-    </blockquote>
   );
 }
