@@ -75,6 +75,8 @@ async function main(): Promise<void> {
           const failed = round.checks.filter((ch) => !ch.passed).map((ch) => `${ch.id}: ${ch.detail}`);
           console.log(`    round ${i + 1}: ${round.draft}`);
           console.log(`      ${failed.length ? `✗ ${failed.join(' | ')}` : '✓ all checks passed'}`);
+          if (round.dismissed.length) console.log(`      (judge flags dismissed as restating the sources: ${round.dismissed.map((d) => d.claim).join('; ')})`);
+          if (round.coverage) console.log(`      coverage ${round.coverage.covered}/${round.coverage.supported} (reported only)`);
           if (round.questions.length) console.log(`      ? ${round.questions.join(' | ')}`);
         },
       });
@@ -98,6 +100,10 @@ async function main(): Promise<void> {
     console.log(`    invented terms caught      ${caught('terms')}`);
     console.log(`    judge flags                ${caught('claims')}`);
     console.log(`    over length                ${caught('length')}`);
+    const dismissed = mine.reduce((n, r) => n + r.result.rounds.reduce((m, rd) => m + rd.dismissed.length, 0), 0);
+    console.log(`    judge flags dismissed      ${dismissed}`);
+    const finals = mine.map((r) => r.result.rounds.at(-1)?.coverage).filter((x) => x !== undefined);
+    if (finals.length) console.log(`    final coverage             ${finals.map((x) => `${x.covered}/${x.supported}`).join(', ')}  (reported only)`);
   }
 
   const outDir = path.join(root, 'eval-results');

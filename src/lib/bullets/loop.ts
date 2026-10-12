@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { callStructured } from '@/lib/llm/structured';
 import type { CallRecord } from '@/lib/llm/usage';
-import { runCodeChecks, type CheckResult } from './checks';
+import { claimCoveredBySources, coverage, runCodeChecks, type CheckResult } from './checks';
 
 /**
  * Bullet improvement as an evaluator–optimizer loop:
@@ -30,7 +30,11 @@ export interface Round {
   checks: CheckResult[];
   /** Claims the judge found unsupported. Empty if the judge didn't run (code checks failed first) or found none. */
   unsupported: { claim: string; reason: string }[];
+  /** Judge flags dropped because every word of the claim is already in the sources. Kept for review. */
+  dismissed: { claim: string; reason: string }[];
   judged: boolean;
+  /** Reported only: parts of the target the sources support, and how many the draft mentions. */
+  coverage?: { covered: number; supported: number };
 }
 
 export type LoopResult =
@@ -125,6 +129,7 @@ export async function improveBullet(task: BulletTask, options: ImproveOptions = 
     const draft = drafted.data.bullet.trim().replace(/^[-•●]\s*/, '');
     const checks = runCodeChecks(draft, sources, task.maxWords);
     let unsupported: Round['unsupported'] = [];
+    let dismissed: Round['dismissed'] = [];
     let judged = false;
 
     // The judge is a second model call, so it only runs once the free code checks pass.
@@ -142,7 +147,8 @@ export async function improveBullet(task: BulletTask, options: ImproveOptions = 
       if (!judgedCall.ok) return failure(judgedCall, rounds, calls);
       calls.push(judgedCall.call);
       judged = true;
-      unsupported = judgedCall.data.unsupported;
+      unsupported = judgedCall.data.unsupported.filter((u) => !claimCoveredBySources(u.claim, sources));
+      dismissed = judgedCall.data.unsupported.filter((u) => claimCoveredBySources(u.claim, sources));
       checks.push({
         id: 'claims',
         passed: unsupported.length === 0,
@@ -153,7 +159,16 @@ export async function improveBullet(task: BulletTask, options: ImproveOptions = 
       });
     }
 
-    const round: Round = { draft, questions: drafted.data.questions, checks, unsupported, judged };
+    const c = task.target ? coverage(draft, sources, task.target) : null;
+    const round: Round = {
+      draft,
+      questions: drafted.data.questions,
+      checks,
+      unsupported,
+      dismissed,
+      judged,
+      ...(c && c.supported.length > 0 ? { coverage: { covered: c.covered.length, supported: c.supported.length } } : {}),
+    };
     rounds.push(round);
     options.onRound?.(round, i);
     if (checks.every((c) => c.passed)) return { status: 'passed', rounds, calls };

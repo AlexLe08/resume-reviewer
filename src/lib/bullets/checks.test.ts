@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { extractNumbers, numbersNotInSources, runCodeChecks, termsNotInSources, wordCount } from './checks';
+import {
+  claimCoveredBySources,
+  coverage,
+  extractNumbers,
+  numbersNotInSources,
+  runCodeChecks,
+  targetItems,
+  termsNotInSources,
+  wordCount,
+} from './checks';
 
 describe('extractNumbers', () => {
   it('normalizes digits, separators, percentages, and number words', () => {
@@ -59,5 +68,72 @@ describe('runCodeChecks', () => {
 
   it('counts words', () => {
     expect(wordCount('  Built a   design system ')).toBe(4);
+  });
+});
+
+const TARGET =
+  'Deep understanding of web accessibility, including WCAG, semantic HTML, ARIA, keyboard navigation, focus management, screen readers, and accessibility testing.';
+const NOTES = [
+  'Implemented the ARIA attributes expected on a combobox input and its suggestion listbox, such as aria-describedby.',
+  'Made the section titles inside the suggestion listbox <h2> headings.',
+  'Tested primarily with VoiceOver in Chrome, Firefox, and Safari.',
+  'Worked with QA and an accessibility specialist to test with NVDA on Windows, and on mobile.',
+  'Built keyboard navigation: correct tab order through the search elements, and arrow keys inside the suggestion list.',
+  'Managed focus, such as returning focus to the search input after the clear-text button is pressed.',
+].join('\n');
+
+describe('targetItems', () => {
+  it('splits the listed parts of a requirement', () => {
+    expect(targetItems(TARGET)).toEqual([
+      'WCAG', 'semantic HTML', 'ARIA', 'keyboard navigation', 'focus management', 'screen readers', 'accessibility testing',
+    ]);
+  });
+
+  it('returns nothing for a requirement without a list', () => {
+    expect(targetItems('Track record of measurable impact on conversion or site performance.')).toEqual([]);
+  });
+});
+
+describe('coverage', () => {
+  it('counts only the parts the sources support, so WCAG is never required', () => {
+    const c = coverage('Built ARIA combobox semantics', NOTES, TARGET);
+    expect(c.supported).toEqual(['ARIA', 'keyboard navigation', 'focus management', 'screen readers', 'accessibility testing']);
+    expect(c.needed).toBe(4);
+  });
+
+  it('treats VoiceOver and NVDA as screen readers, and tested/testing as the same word', () => {
+    const c = coverage(
+      'Built ARIA combobox semantics, keyboard navigation, and focus management; tested accessibility with VoiceOver and NVDA.',
+      NOTES,
+      TARGET,
+    );
+    expect(c.missing).toEqual([]);
+  });
+
+  it('lists what a vague bullet leaves out', () => {
+    expect(coverage('Developed accessibility features including ARIA support.', NOTES, TARGET).missing).toContain('keyboard navigation');
+  });
+});
+
+describe('termsNotInSources with implied terms', () => {
+  it('accepts HTML when the sources describe HTML elements', () => {
+    expect(termsNotInSources('Used semantic HTML headings', NOTES)).toEqual([]);
+  });
+});
+
+describe('claimCoveredBySources', () => {
+  const footer = 'Engineered an enterprise-wide global web footer and UI library using React 18 and TypeScript';
+
+  it('dismisses a flag that restates the source', () => {
+    expect(claimCoveredBySources('using React 18 and TypeScript', footer)).toBe(true);
+  });
+
+  it('dismisses a flag that rewords the source with different word forms', () => {
+    const full = `${footer}; utilized strict modularity to enable diverse internal business verticals and tech integration partners to seamlessly consume the code.`;
+    expect(claimCoveredBySources('enabling seamless consumption by diverse business verticals and partners', full)).toBe(true);
+  });
+
+  it('keeps a flag that adds something new', () => {
+    expect(claimCoveredBySources('Developed and maintained', 'Worked on the checkout page and fixed bugs')).toBe(false);
   });
 });

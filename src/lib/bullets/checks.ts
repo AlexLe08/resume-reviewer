@@ -46,7 +46,7 @@ export function numbersNotInSources(draft: string, sources: string): string[] {
  * common word; that's what the model judge is for.
  */
 export function termsNotInSources(draft: string, sources: string): string[] {
-  const haystack = sources.toLowerCase();
+  const haystack = expandImplied(sources).toLowerCase();
   const tokens = draft
     .split(/\s+/)
     .map((t) => t.replace(/^[^\w<]+|[^\w>+#]+$/g, ''))
@@ -66,6 +66,71 @@ export function termsNotInSources(draft: string, sources: string): string[] {
     if (!haystack.includes(plain)) flagged.add(token);
   });
   return [...flagged];
+}
+
+/**
+ * A few things a source implies without naming them. Naming VoiceOver means
+ * screen readers; writing <h2> headings means HTML. Kept deliberately small:
+ * every entry here is a claim the checks will accept without the candidate
+ * saying it, so each one has to be unarguable.
+ */
+export function expandImplied(text: string): string {
+  let out = text;
+  if (/\b(voiceover|nvda|jaws|talkback|narrator)\b/i.test(text)) out += ' screen readers';
+  if (/<\/?(h[1-6]|button|nav|main|label|ul|li)>/i.test(text)) out += ' html';
+  return out;
+}
+
+const STOPWORDS = new Set([
+  'a', 'an', 'and', 'or', 'the', 'of', 'in', 'on', 'for', 'to', 'with', 'by', 'at', 'from', 'into', 'via', 'across',
+  'using', 'including', 'such', 'as', 'like',
+  'deep', 'strong', 'solid', 'understanding', 'knowledge', 'experience', 'ability', 'proven',
+]);
+
+/** Significant words, cut to 4 characters so "tested"/"testing" and "managed"/"management" match. */
+export function stems(text: string): string[] {
+  return (expandImplied(text).toLowerCase().match(/[a-z0-9]+/g) ?? [])
+    .filter((w) => !STOPWORDS.has(w))
+    .map((w) => (w.length > 4 ? w.slice(0, 4) : w));
+}
+
+/** True if every significant word of `phrase` appears in `text`. */
+export function mentions(text: string, phrase: string): boolean {
+  const have = new Set(stems(text));
+  const need = stems(phrase);
+  return need.length > 0 && need.every((s) => have.has(s));
+}
+
+/**
+ * The listed parts of a requirement: "…, including WCAG, ARIA, keyboard
+ * navigation, and screen readers" → ["WCAG", "ARIA", "keyboard navigation",
+ * "screen readers"]. Empty unless there's a list of at least three, because
+ * a requirement without one can't be split reliably.
+ */
+export function targetItems(target: string): string[] {
+  const list = target.match(/\b(?:including|such as|like|e\.g\.,?)\s+([^.]*)/i)?.[1];
+  if (!list) return [];
+  const items = list
+    .split(/,|\band\b|\bor\b/)
+    .map((item) => item.trim())
+    .filter((item) => stems(item).length > 0);
+  return items.length >= 3 ? items : [];
+}
+
+/**
+ * Coverage: of the target's listed parts that the sources support, how many
+ * the draft mentions.
+ *
+ * Reported, not enforced. Replayed against the candidate's own ratings of the
+ * first spike's bullets, it didn't predict them: both bullets rated "use as is"
+ * covered 3 of 5 parts, the same as the one rated "wouldn't use". Making it a
+ * pass/fail check would have rejected the bullets the candidate liked best.
+ */
+export function coverage(draft: string, sources: string, target: string) {
+  const supported = targetItems(target).filter((item) => mentions(sources, item));
+  const covered = supported.filter((item) => mentions(draft, item));
+  const needed = Math.min(supported.length, Math.ceil(supported.length * 0.75));
+  return { supported, covered, missing: supported.filter((item) => !covered.includes(item)), needed };
 }
 
 export function wordCount(text: string): number {
@@ -113,4 +178,15 @@ export function runCodeChecks(draft: string, sources: string, maxWords: number):
       feedback: firstPerson ? 'Remove first-person words (I, me, my, we, our). Start with the action verb.' : '',
     },
   ];
+}
+
+/**
+ * A judge flag whose every significant word already appears in the sources is
+ * almost certainly a false alarm (the spike's judge once flagged a draft that
+ * restated the original bullet nearly word for word). The cost: a claim that
+ * reuses source words in a wrong relationship slips through. The judge wasn't
+ * catching those anyway.
+ */
+export function claimCoveredBySources(claim: string, sources: string): boolean {
+  return mentions(sources, claim);
 }
