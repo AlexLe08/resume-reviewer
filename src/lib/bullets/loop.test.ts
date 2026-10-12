@@ -15,6 +15,24 @@ describe('sourcesText', () => {
 });
 
 describe('improveBullet with the mock provider', () => {
+  it('reports the first drafts once and each candidate when it finishes', async () => {
+    const drafted: string[] = [];
+    const finished: [number, string][] = [];
+    await improveBullet(
+      { bullet: 'Built a shared component library in React used by nine product teams', notes: [], maxWords: 25 },
+      {
+        log: false,
+        onDrafted: (candidates) => drafted.push(...candidates.map((c) => c.angle)),
+        onCandidateDone: (i, c) => finished.push([i, c.status]),
+      },
+    );
+    expect(drafted).toEqual(['what was built', 'shorter']);
+    expect(finished).toEqual([
+      [0, 'passed'],
+      [1, 'passed'],
+    ]);
+  });
+
   it('checks every candidate, judges the ones that pass the code checks, and keeps them', async () => {
     const seen: number[] = [];
     const result = await improveBullet(

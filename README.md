@@ -169,3 +169,9 @@ npm run eval:jobs -- --stage both --only job-1 --runs 5
 ```
 
 Matching runs against the saved list rather than a fresh extraction, so the two steps can't mask each other's failures.
+
+## Bullet writer (Phase 2)
+
+Next to any job requirement marked **Partly** or **Not shown**, **Write a bullet for this** opens a panel that turns your own notes into candidate bullets. It's an evaluator–optimizer loop (`lib/bullets/loop.ts`): one call drafts up to three candidates from different angles; each is checked in code (no numbers, names, or terms your notes don't contain; length; your style rules) and then by a model judge; failing candidates are revised with their specific failures. Only candidates that pass every check are shown. You pick, edit, and copy; edits are checked against your notes too.
+
+Your writing style (words you don't use, your replacements, keeping code syntax out) is saved in your browser. Notes are used for one request and never stored.

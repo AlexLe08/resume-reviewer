@@ -70,7 +70,7 @@ export function MatchPanel({ file, state, blocked, onRun, onCancel }: MatchPanel
 
 function disabledReason(file: File | null, length: number, rawLength: number, blocked: boolean, busy: boolean): string {
   if (busy) return 'With a local model this usually takes 3 to 5 minutes. Results appear as each one is checked.';
-  if (blocked) return 'Waiting for the review to finish: the local model handles one request at a time.';
+  if (blocked) return 'Waiting for another request to finish: the local model handles one at a time.';
   if (!file) return 'Choose your resume above first.';
   if (rawLength > MAX_POSTING_CHARS) return 'That posting is over 20,000 characters. Paste just the job description.';
   if (length > 0 && length < MIN_POSTING_CHARS) return 'Paste the full posting, including its requirements.';

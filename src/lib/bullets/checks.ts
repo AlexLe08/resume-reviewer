@@ -58,6 +58,7 @@ export function termsNotInSources(draft: string, sources: string): string[] {
       /[A-Z].*[A-Z]/.test(token) || // NVDA, VoiceOver, WCAG
       /[a-z][.#+][a-z0-9]/i.test(token) || // Next.js, C#, C++
       /^aria-/i.test(token) || // aria-describedby
+      /=/.test(token) || // role=group, type="search"
       /^<\/?\w+>$/.test(token) || // <h2>
       (/[a-z]\d|\d[a-z]/i.test(token) && !/^\d+(st|nd|rd|th|s)$/i.test(token)); // h2, ES6 (not "2nd", "90s")
     const capitalized = i > 0 && /^[A-Z][a-z]/.test(token);
@@ -146,11 +147,19 @@ export function avoidedWordsUsed(draft: string, avoid: string[]): string[] {
   });
 }
 
+/** Code-level details: attribute names, attribute syntax, and HTML tags. Those belong in an interview, not on a resume. */
+export function codeSyntaxUsed(draft: string): string[] {
+  return draft
+    .split(/\s+/)
+    .map((t) => t.replace(/^[^\w<]+|[^\w>]+$/g, ''))
+    .filter((t) => /=/.test(t) || /^<\/?\w+>$/.test(t) || /^aria-\w+/i.test(t));
+}
+
 export function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-export function runCodeChecks(draft: string, sources: string, maxWords: number, avoid: string[] = []): CheckResult[] {
+export function runCodeChecks(draft: string, sources: string, maxWords: number, avoid: string[] = [], noCodeSyntax = false): CheckResult[] {
   const text = draft.trim();
   if (!text) {
     return [{ id: 'empty', passed: false, detail: 'empty draft', feedback: 'The bullet was empty. Write one bullet.' }];
@@ -161,6 +170,7 @@ export function runCodeChecks(draft: string, sources: string, maxWords: number, 
   const words = wordCount(text);
   const firstPerson = /\b(I|me|my|we|our)\b/.test(text) || /\b(me|my|we|our)\b/i.test(text);
   const avoided = avoidedWordsUsed(text, avoid);
+  const code = noCodeSyntax ? codeSyntaxUsed(text) : [];
 
   return [
     {
@@ -193,19 +203,26 @@ export function runCodeChecks(draft: string, sources: string, maxWords: number, 
     },
     {
       id: 'style',
-      passed: avoided.length === 0,
-      detail: avoided.length ? `avoided words used: ${avoided.join(', ')}` : 'ok',
-      feedback: avoided.length ? `The candidate doesn't use these words: ${avoided.join(', ')}. Rephrase without them.` : '',
+      passed: avoided.length === 0 && code.length === 0,
+      detail: [avoided.length ? `avoided words: ${avoided.join(', ')}` : '', code.length ? `code syntax: ${code.join(', ')}` : '']
+        .filter(Boolean)
+        .join(' | ') || 'ok',
+      feedback: [
+        avoided.length ? `The candidate doesn't use these words: ${avoided.join(', ')}. Rephrase without them.` : '',
+        code.length
+          ? `Name the technique instead of the code: ${code.join(', ')} → for example "ARIA attributes" or "semantic headings". Keep the code for the interview.`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
     },
   ];
 }
 
-// Generic "made it" verbs a rewrite may swap freely. Verbs that claim scope or
-// leadership (led, managed, spearheaded, owned) are deliberately not here:
-// swapping "worked on" for "led" is exactly the overclaim the judge exists for.
-const INTERCHANGEABLE_VERBS = new Set([
-  'developed', 'engineered', 'built', 'created', 'implemented', 'designed', 'delivered', 'wrote', 'coded', 'produced',
-]);
+// Generic "made it" verbs a rewrite may swap freely, compared by stem so
+// "implementing" matches "implemented". Verbs that claim scope or leadership
+// (led, managed, spearheaded, owned) are deliberately not here.
+const INTERCHANGEABLE_VERBS = new Set(['deve', 'engi', 'buil', 'crea', 'impl', 'desi', 'deli', 'wrot', 'code', 'prod']);
 
 /**
  * A judge flag whose every significant word already appears in the sources is
@@ -216,7 +233,7 @@ const INTERCHANGEABLE_VERBS = new Set([
  */
 export function claimCoveredBySources(claim: string, sources: string): boolean {
   const words = claim.trim().split(/\s+/);
-  const first = (words[0] ?? '').toLowerCase().replace(/[^a-z]/g, '');
+  const first = stems(words[0] ?? '')[0] ?? '';
   const rest = INTERCHANGEABLE_VERBS.has(first) && words.length > 1 ? words.slice(1).join(' ') : claim;
   return mentions(sources, rest);
 }

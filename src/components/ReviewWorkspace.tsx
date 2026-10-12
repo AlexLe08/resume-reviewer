@@ -1,8 +1,12 @@
 'use client';
 
 import { useRef, useState, type KeyboardEvent } from 'react';
+import { useBulletStream } from '@/hooks/useBulletStream';
 import { useMatchStream } from '@/hooks/useMatchStream';
 import { useReviewStream } from '@/hooks/useReviewStream';
+import { useStoredState } from '@/hooks/useStoredState';
+import { DEFAULT_STYLE, type WritingStyle } from '@/lib/bullets/request';
+import { BulletWriterProvider } from './BulletWriter';
 import { ChecksPanel } from './ChecksPanel';
 import { FilePicker } from './FilePicker';
 import { MatchPanel } from './MatchPanel';
@@ -10,6 +14,14 @@ import { ParsedTextPanel } from './ParsedTextPanel';
 import { ReviewPanel } from './ReviewPanel';
 
 type Mode = 'review' | 'match';
+
+const STYLE_KEY = 'resume-reviewer:writing-style';
+
+function isWritingStyle(value: unknown): value is WritingStyle {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.avoidText === 'string' && typeof v.preferText === 'string' && typeof v.noCodeSyntax === 'boolean';
+}
 const MODES: { id: Mode; label: string }[] = [
   { id: 'review', label: 'Recruiter review' },
   { id: 'match', label: 'Match to a job' },
@@ -22,8 +34,30 @@ export function ReviewWorkspace() {
 
   const review = useReviewStream();
   const match = useMatchStream();
+  const bullets = useBulletStream();
+  const [openBulletFor, setOpenBulletFor] = useState<number | null>(null);
+  const [style, setStyle] = useStoredState<WritingStyle>(STYLE_KEY, DEFAULT_STYLE, isWritingStyle);
+
   const reviewBusy = review.state.status === 'extracting' || review.state.status === 'reviewing';
   const matchBusy = ['reading', 'extracting', 'matching'].includes(match.state.phase);
+  const bulletBusy = bullets.state.phase === 'drafting' || bullets.state.phase === 'checking';
+  // The local model handles one request at a time, so each action waits for the others.
+  const busyElsewhere = (self: 'review' | 'match' | 'bullets') =>
+    (self !== 'review' && reviewBusy) || (self !== 'match' && matchBusy) || (self !== 'bullets' && bulletBusy);
+
+  const bulletWriter = {
+    openId: openBulletFor,
+    open: (id: number | null) => {
+      if (id !== openBulletFor) bullets.reset();
+      setOpenBulletFor(id);
+    },
+    state: bullets.state,
+    run: bullets.run,
+    cancel: bullets.cancel,
+    blocked: busyElsewhere('bullets'),
+    style,
+    setStyle,
+  };
 
   // Arrow keys move between tabs, as screen-reader users expect from a tab list.
   function handleTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -78,15 +112,15 @@ export function ReviewWorkspace() {
             <button
               type="button"
               className="button"
-              disabled={!file || matchBusy}
+              disabled={!file || busyElsewhere('review')}
               onClick={() => file && review.start(file)}
             >
               Review resume
             </button>
           )}
           <p className="actions-hint">
-            {matchBusy
-              ? 'Waiting for the job match to finish: the local model handles one request at a time.'
+            {busyElsewhere('review')
+              ? 'Waiting for another request to finish: the local model handles one at a time.'
               : !file
                 ? 'Choose your resume above first.'
                 : ''}
@@ -121,7 +155,18 @@ export function ReviewWorkspace() {
       </section>
 
       <section role="tabpanel" id="panel-match" aria-labelledby="tab-match" hidden={mode !== 'match'}>
-        <MatchPanel file={file} state={match.state} blocked={reviewBusy} onRun={match.run} onCancel={match.cancel} />
+        <BulletWriterProvider value={bulletWriter}>
+          <MatchPanel
+            file={file}
+            state={match.state}
+            blocked={busyElsewhere('match')}
+            onRun={(f, posting) => {
+              bulletWriter.open(null);
+              void match.run(f, posting);
+            }}
+            onCancel={match.cancel}
+          />
+        </BulletWriterProvider>
       </section>
 
       <p className="dev-note">

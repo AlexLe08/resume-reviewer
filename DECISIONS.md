@@ -239,6 +239,20 @@ Median time per review: ~78–86 s
 
   User ratings after the fixes were 6 as is, 4 with edits, 0 rejected (previously 4/4/2), and the revised bullet was usable.
 
+  6.10:
+
+  Candidates from different angles: 3 out of 3 runs gave a real choice on accessibility, with the angles distinct (overlap 0.04). All avoided words were enforced. The vague case still asked for the real result 3 out of 3 times.
+  Gaps: a plausible technical detail (role=group) passed every check. The judge missed “developed features” after catching a similar claim before. Paraphrases forced by the avoid list triggered false judge flags; the fix is letting the candidate state their preferred replacement.
+
+  6.11:
+
+  The code-syntax rule is a personal style setting: specifics belong in the interview, and resumes use category terms.
+  Lowercase-term checking in code was rejected: it would either break rewording or require a dictionary that’s never complete. The judge and the human pick cover it.
+  Checks are frozen. A new heuristic requires a failure seen across new bullets.
+
+  6.12
+  Bullet writer in the app. The panel opens inline from a requirement marked Partly or Not shown. Up to three candidates are streamed as each passes its checks. The person’s edits are checked in the browser by the same code, as warnings rather than blocks. Writing style persists in the browser; notes are never stored. First real use: 3 of 3 candidates passed, and the user would use all three. Noted but not fixed: a question that asked for facts the notes may already contain (one occurrence, so the checks stay frozen).
+
 ---
 
 ## 7. Open items

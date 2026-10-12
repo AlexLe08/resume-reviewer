@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   avoidedWordsUsed,
+  codeSyntaxUsed,
   claimCoveredBySources,
   coverage,
   extractNumbers,
@@ -164,5 +165,20 @@ describe('avoidedWordsUsed', () => {
     const style = runCodeChecks('Built a seamless library', 'Built a library', 25, avoid).find((c) => c.id === 'style');
     expect(style).toMatchObject({ passed: false });
     expect(style?.feedback).toContain('seamless');
+  });
+});
+
+describe('gaps found by the candidates spike', () => {
+  it('flags attribute syntax the sources never mention', () => {
+    expect(termsNotInSources('Added role=group to the listbox', 'Added ARIA attributes such as aria-describedby')).toEqual(['role=group']);
+  });
+
+  it('matches build verbs by stem, so "implementing" restates "utilized" work', () => {
+    expect(claimCoveredBySources('implementing strict modularity', 'utilized strict modularity to enable partners')).toBe(true);
+  });
+
+  it('finds code syntax when the candidate keeps it out of bullets', () => {
+    expect(codeSyntaxUsed('Added role=group and aria-labelledby to <h2> titles')).toEqual(['role=group', 'aria-labelledby', '<h2>']);
+    expect(runCodeChecks('Added ARIA attributes', 'Added ARIA attributes', 25, [], true).every((c) => c.passed)).toBe(true);
   });
 });

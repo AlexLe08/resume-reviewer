@@ -60,7 +60,13 @@ export function useNdjsonRequest<S, E>({ url, initial, starting, reduce, isFinal
     setState((s) => fail(s, 'Canceled.'));
   }, [fail]);
 
-  return { state, start, cancel };
+  /** Stop anything in flight and go back to the starting state, e.g. when switching what the panel is for. */
+  const reset = useCallback(() => {
+    abortRef.current?.abort();
+    setState(initial);
+  }, [initial]);
+
+  return { state, start, cancel, reset };
 }
 
 async function readErrorMessage(res: Response): Promise<string> {
