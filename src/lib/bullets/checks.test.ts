@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  avoidedWordsUsed,
   claimCoveredBySources,
   coverage,
   extractNumbers,
@@ -133,7 +134,35 @@ describe('claimCoveredBySources', () => {
     expect(claimCoveredBySources('enabling seamless consumption by diverse business verticals and partners', full)).toBe(true);
   });
 
+  it('treats generic build verbs as interchangeable', () => {
+    expect(claimCoveredBySources('Developed a modular, enterprise UI library and global web footer', footer + '; utilized strict modularity')).toBe(true);
+  });
+
+  it('still keeps a flag when the swapped-in words claim more', () => {
+    expect(claimCoveredBySources('Developed and maintained', 'Worked on the checkout page and fixed bugs')).toBe(false);
+    expect(claimCoveredBySources('Led the global web footer', footer)).toBe(false);
+  });
+
   it('keeps a flag that adds something new', () => {
     expect(claimCoveredBySources('Developed and maintained', 'Worked on the checkout page and fixed bugs')).toBe(false);
+  });
+});
+
+describe('avoidedWordsUsed', () => {
+  const avoid = ['seamless', 'verticals', 'diverse'];
+
+  it('catches word forms of an avoided word', () => {
+    expect(avoidedWordsUsed('Enabled partners to seamlessly consume it across business verticals', avoid)).toEqual(['seamless', 'verticals']);
+    expect(avoidedWordsUsed('Served each vertical', avoid)).toEqual(['verticals']);
+  });
+
+  it('passes a draft that uses none of them', () => {
+    expect(avoidedWordsUsed('Built a UI library consumed by internal partners', avoid)).toEqual([]);
+  });
+
+  it('becomes a failing check with specific feedback', () => {
+    const style = runCodeChecks('Built a seamless library', 'Built a library', 25, avoid).find((c) => c.id === 'style');
+    expect(style).toMatchObject({ passed: false });
+    expect(style?.feedback).toContain('seamless');
   });
 });

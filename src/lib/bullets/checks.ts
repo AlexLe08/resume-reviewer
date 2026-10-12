@@ -6,7 +6,7 @@
  */
 
 export interface CheckResult {
-  id: 'empty' | 'numbers' | 'terms' | 'length' | 'first_person' | 'claims';
+  id: 'empty' | 'numbers' | 'terms' | 'length' | 'first_person' | 'style' | 'claims';
   passed: boolean;
   /** Short, for people reading a log. */
   detail: string;
@@ -133,11 +133,24 @@ export function coverage(draft: string, sources: string, target: string) {
   return { supported, covered, missing: supported.filter((item) => !covered.includes(item)), needed };
 }
 
+/**
+ * Words the candidate has said they don't use. Personal style, enforced by code
+ * rather than requested in the prompt, so it holds every time. "verticals"
+ * also catches "vertical"; "seamless" also catches "seamlessly".
+ */
+export function avoidedWordsUsed(draft: string, avoid: string[]): string[] {
+  return avoid.filter((word) => {
+    const root = word.toLowerCase().trim().replace(/s$/, '');
+    if (root.length < 3) return false;
+    return new RegExp(`\\b${root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(draft);
+  });
+}
+
 export function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-export function runCodeChecks(draft: string, sources: string, maxWords: number): CheckResult[] {
+export function runCodeChecks(draft: string, sources: string, maxWords: number, avoid: string[] = []): CheckResult[] {
   const text = draft.trim();
   if (!text) {
     return [{ id: 'empty', passed: false, detail: 'empty draft', feedback: 'The bullet was empty. Write one bullet.' }];
@@ -147,6 +160,7 @@ export function runCodeChecks(draft: string, sources: string, maxWords: number):
   const terms = termsNotInSources(text, sources);
   const words = wordCount(text);
   const firstPerson = /\b(I|me|my|we|our)\b/.test(text) || /\b(me|my|we|our)\b/i.test(text);
+  const avoided = avoidedWordsUsed(text, avoid);
 
   return [
     {
@@ -177,16 +191,32 @@ export function runCodeChecks(draft: string, sources: string, maxWords: number):
       detail: firstPerson ? 'uses first person' : 'ok',
       feedback: firstPerson ? 'Remove first-person words (I, me, my, we, our). Start with the action verb.' : '',
     },
+    {
+      id: 'style',
+      passed: avoided.length === 0,
+      detail: avoided.length ? `avoided words used: ${avoided.join(', ')}` : 'ok',
+      feedback: avoided.length ? `The candidate doesn't use these words: ${avoided.join(', ')}. Rephrase without them.` : '',
+    },
   ];
 }
 
+// Generic "made it" verbs a rewrite may swap freely. Verbs that claim scope or
+// leadership (led, managed, spearheaded, owned) are deliberately not here:
+// swapping "worked on" for "led" is exactly the overclaim the judge exists for.
+const INTERCHANGEABLE_VERBS = new Set([
+  'developed', 'engineered', 'built', 'created', 'implemented', 'designed', 'delivered', 'wrote', 'coded', 'produced',
+]);
+
 /**
  * A judge flag whose every significant word already appears in the sources is
- * almost certainly a false alarm (the spike's judge once flagged a draft that
- * restated the original bullet nearly word for word). The cost: a claim that
- * reuses source words in a wrong relationship slips through. The judge wasn't
- * catching those anyway.
+ * almost certainly a false alarm. A leading generic build verb is ignored, so
+ * "Developed X" restating "Engineered X" is dismissed too. The cost: a claim
+ * that reuses source words in a wrong relationship slips through. The judge
+ * wasn't catching those anyway.
  */
 export function claimCoveredBySources(claim: string, sources: string): boolean {
-  return mentions(sources, claim);
+  const words = claim.trim().split(/\s+/);
+  const first = (words[0] ?? '').toLowerCase().replace(/[^a-z]/g, '');
+  const rest = INTERCHANGEABLE_VERBS.has(first) && words.length > 1 ? words.slice(1).join(' ') : claim;
+  return mentions(sources, rest);
 }

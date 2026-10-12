@@ -1,18 +1,20 @@
 /**
- * SPIKE (Phase 2): can a local model improve a bullet through draft → check →
- * revise, without inventing anything, and does the judge catch what code can't?
+ * SPIKE (Phase 2): bullet improvement with candidates. One call drafts up to
+ * three candidates from different angles; each is checked and, if it fails,
+ * revised on its own. The person picks from those that pass.
  *
  * Cases are *.bullet.json in fixtures/bullets/ and fixtures/private/bullets/.
- * "expect": "pass" → the loop should end with every check passing.
+ * "expect": "pass" → at least one candidate should pass every check.
  * "expect": "ask"  → the sources lack a fact the target needs: the honest
- *                     result passes every check AND asks the candidate for it.
+ *                     result is candidates that pass AND a question for it.
  *
- *   npm run spike:bullets                    5 runs per case
- *   npm run spike:bullets -- --only footer --runs 3
+ *   npm run spike:bullets                    3 runs per case
+ *   npm run spike:bullets -- --only footer --runs 2
  */
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { stems } from '@/lib/bullets/checks';
 import { improveBullet, type BulletTask, type LoopResult } from '@/lib/bullets/loop';
 import { getEnv } from '@/lib/env';
 import { modelName, providerName } from '@/lib/llm';
@@ -40,10 +42,25 @@ async function loadCases(root: string): Promise<Case[]> {
   return cases;
 }
 
-function succeeded(c: Case, result: LoopResult): boolean {
-  if (result.status !== 'passed') return false;
-  if (c.expect === 'ask') return (result.rounds.at(-1)?.questions.length ?? 0) > 0;
-  return true;
+const passedBullets = (r: LoopResult) => r.candidates.filter((c) => c.status === 'passed').map((c) => c.rounds.at(-1)!.draft);
+
+function succeeded(c: Case, r: LoopResult): boolean {
+  if (r.status !== 'done' || passedBullets(r).length === 0) return false;
+  return c.expect === 'ask' ? r.questions.length > 0 : true;
+}
+
+/** Highest word overlap between any two passing candidates (0 = nothing shared, 1 = identical). */
+function maxOverlap(bullets: string[]): number {
+  let max = 0;
+  for (let i = 0; i < bullets.length; i++) {
+    for (let j = i + 1; j < bullets.length; j++) {
+      const a = new Set(stems(bullets[i]!));
+      const b = new Set(stems(bullets[j]!));
+      const shared = [...a].filter((s) => b.has(s)).length;
+      max = Math.max(max, shared / (a.size + b.size - shared || 1));
+    }
+  }
+  return max;
 }
 
 async function main(): Promise<void> {
@@ -52,7 +69,7 @@ async function main(): Promise<void> {
   } catch {
     // Rely on the shell environment.
   }
-  const { values } = parseArgs({ options: { runs: { type: 'string', default: '5' }, only: { type: 'string' } } });
+  const { values } = parseArgs({ options: { runs: { type: 'string', default: '3' }, only: { type: 'string' } } });
   const runs = Number(values.runs);
   getEnv();
 
@@ -61,28 +78,30 @@ async function main(): Promise<void> {
   const cases = (await loadCases(root)).filter((c) => filters.length === 0 || filters.some((f) => c.name.includes(f)));
   if (cases.length === 0) throw new Error('No *.bullet.json cases found.');
 
-  console.log(`Bullet loop spike: ${cases.length} case(s) × ${runs} run(s) with ${providerName()} / ${modelName()}\n`);
-  const records: { case: string; run: number; result: LoopResult }[] = [];
+  console.log(`Bullet candidates spike: ${cases.length} case(s) × ${runs} run(s) with ${providerName()} / ${modelName()}\n`);
+  const records: { case: string; run: number; result: LoopResult; seconds: number }[] = [];
 
   for (const c of cases) {
-    console.log(`${c.name}  (expect: ${c.expect})`);
+    console.log(`${c.name}  (expect: ${c.expect}${c.avoid?.length ? `, avoid: ${c.avoid.join(', ')}` : ''})`);
     for (let run = 1; run <= runs; run++) {
       console.log(`  run ${run}/${runs}`);
       const started = performance.now();
       const result = await improveBullet(c, {
         log: false,
-        onRound: (round, i) => {
+        onRound: (i, round, r) => {
           const failed = round.checks.filter((ch) => !ch.passed).map((ch) => `${ch.id}: ${ch.detail}`);
-          console.log(`    round ${i + 1}: ${round.draft}`);
-          console.log(`      ${failed.length ? `✗ ${failed.join(' | ')}` : '✓ all checks passed'}`);
-          if (round.dismissed.length) console.log(`      (judge flags dismissed as restating the sources: ${round.dismissed.map((d) => d.claim).join('; ')})`);
-          if (round.coverage) console.log(`      coverage ${round.coverage.covered}/${round.coverage.supported} (reported only)`);
-          if (round.questions.length) console.log(`      ? ${round.questions.join(' | ')}`);
+          console.log(`    [${i + 1}] round ${r + 1}: ${round.draft}`);
+          console.log(`        ${failed.length ? `✗ ${failed.join(' | ')}` : '✓ passed'}${round.coverage ? `  (coverage ${round.coverage.covered}/${round.coverage.supported})` : ''}`);
+          if (round.dismissed.length) console.log(`        (dismissed judge flags: ${round.dismissed.map((d) => d.claim).join('; ')})`);
         },
       });
-      records.push({ case: c.name, run, result });
-      const seconds = ((performance.now() - started) / 1000).toFixed(1);
-      console.log(`    → ${result.status}${result.status === 'error' ? `: ${result.message}` : ''}, ${result.rounds.length} round(s), ${seconds} s, ${succeeded(c, result) ? 'SUCCESS' : 'miss'}\n`);
+      const seconds = (performance.now() - started) / 1000;
+      records.push({ case: c.name, run, result, seconds });
+      if (result.status === 'done') {
+        result.candidates.forEach((cand, i) => console.log(`    [${i + 1}] angle: ${cand.angle} → ${cand.status}`));
+        if (result.questions.length) console.log(`    ? ${result.questions.join(' | ')}`);
+      }
+      console.log(`    → ${passedBullets(result).length} passing candidate(s), ${seconds.toFixed(1)} s, ${succeeded(c, result) ? 'SUCCESS' : 'miss'}${result.status === 'error' ? ` (${result.message})` : ''}\n`);
       if (result.status === 'error') break;
     }
   }
@@ -90,20 +109,20 @@ async function main(): Promise<void> {
   console.log('Summary');
   for (const c of cases) {
     const mine = records.filter((r) => r.case === c.name);
-    const ok = mine.filter((r) => succeeded(c, r.result)).length;
-    const rounds = mine.map((r) => r.result.rounds.length).sort((a, b) => a - b);
-    const caught = (id: string) => mine.reduce((n, r) => n + r.result.rounds.filter((rd) => rd.checks.some((ch) => ch.id === id && !ch.passed)).length, 0);
+    const all = mine.flatMap((r) => r.result.candidates);
+    const rounds = mine.flatMap((r) => r.result.candidates.flatMap((cand) => cand.rounds));
+    const caught = (id: string) => rounds.filter((rd) => rd.checks.some((ch) => ch.id === id && !ch.passed)).length;
+    const overlaps = mine.map((r) => maxOverlap(passedBullets(r.result))).sort((a, b) => a - b);
+    const times = mine.map((r) => r.seconds).sort((a, b) => a - b);
     console.log(`  ${c.name}`);
-    console.log(`    success                    ${ok}/${mine.length}  (expect: ${c.expect})`);
-    console.log(`    rounds (median)            ${rounds[Math.floor(rounds.length / 2)] ?? 0}`);
-    console.log(`    invented numbers caught    ${caught('numbers')}`);
-    console.log(`    invented terms caught      ${caught('terms')}`);
-    console.log(`    judge flags                ${caught('claims')}`);
-    console.log(`    over length                ${caught('length')}`);
-    const dismissed = mine.reduce((n, r) => n + r.result.rounds.reduce((m, rd) => m + rd.dismissed.length, 0), 0);
-    console.log(`    judge flags dismissed      ${dismissed}`);
-    const finals = mine.map((r) => r.result.rounds.at(-1)?.coverage).filter((x) => x !== undefined);
-    if (finals.length) console.log(`    final coverage             ${finals.map((x) => `${x.covered}/${x.supported}`).join(', ')}  (reported only)`);
+    console.log(`    success                    ${mine.filter((r) => succeeded(c, r.result)).length}/${mine.length}  (expect: ${c.expect})`);
+    console.log(`    candidates passing         ${all.filter((x) => x.status === 'passed').length}/${all.length}`);
+    console.log(`    runs with 2+ passing       ${mine.filter((r) => passedBullets(r.result).length >= 2).length}/${mine.length}`);
+    console.log(`    revisions                  ${rounds.length - all.length}`);
+    console.log(`    caught: numbers ${caught('numbers')}, terms ${caught('terms')}, style ${caught('style')}, length ${caught('length')}, judge ${caught('claims')}`);
+    console.log(`    judge flags dismissed      ${rounds.reduce((n, rd) => n + rd.dismissed.length, 0)}`);
+    console.log(`    max overlap (median)       ${(overlaps[Math.floor(overlaps.length / 2)] ?? 0).toFixed(2)}  (between passing candidates; lower = more distinct)`);
+    console.log(`    time per run (median)      ${(times[Math.floor(times.length / 2)] ?? 0).toFixed(1)} s`);
   }
 
   const outDir = path.join(root, 'eval-results');

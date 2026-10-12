@@ -15,16 +15,29 @@ describe('sourcesText', () => {
 });
 
 describe('improveBullet with the mock provider', () => {
-  it('runs the checks and the judge, and stops once everything passes', async () => {
-    const rounds: number[] = [];
+  it('checks every candidate, judges the ones that pass the code checks, and keeps them', async () => {
+    const seen: number[] = [];
     const result = await improveBullet(
       { bullet: 'Built a shared component library in React used by nine product teams', notes: [], maxWords: 25 },
-      { log: false, onRound: (_round, i) => rounds.push(i) },
+      { log: false, onRound: (i) => seen.push(i) },
     );
-    expect(result.status).toBe('passed');
-    expect(rounds).toEqual([0]);
-    if (result.status === 'error') return;
-    expect(result.rounds[0]?.judged).toBe(true);
-    expect(result.calls.map((c) => c.task)).toEqual(['bullet:draft', 'bullet:judge']);
+    expect(result.status).toBe('done');
+    if (result.status !== 'done') return;
+    expect(result.candidates.map((c) => c.status)).toEqual(['passed', 'passed']);
+    expect(seen).toEqual([0, 1]);
+    expect(result.calls.map((c) => c.task)).toEqual(['bullet:draft', 'bullet:judge', 'bullet:judge']);
+  });
+
+  it('revises a candidate that breaks a style rule, up to the round limit', async () => {
+    const result = await improveBullet(
+      { bullet: 'Built a seamless library for internal partners', notes: [], maxWords: 25, avoid: ['seamless'] },
+      { log: false, maxRounds: 2 },
+    );
+    if (result.status !== 'done') throw new Error('expected done');
+    // The mock never fixes anything, so the candidate keeps failing and stops at the limit.
+    const first = result.candidates[0]!;
+    expect(first.status).toBe('failed');
+    expect(first.rounds).toHaveLength(2);
+    expect(first.rounds[0]?.checks.find((c) => c.id === 'style')?.passed).toBe(false);
   });
 });

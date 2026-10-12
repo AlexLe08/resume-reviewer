@@ -224,6 +224,21 @@ Median time per review: ~78–86 s
   Display changes. Calculated evidence is labeled as calculated. A repeated quote is shown in full once, then referred back to. Cancel stops the model.
   Open items: verdicts can differ between runs of the same input, and job evals have no check against summary-as-evidence.
 
+  6.8:
+
+  Bullet loop, first spike: 15/15 by the automated bar, but user ratings showed 4 use-as-is, 4 use-with-edits, and 2 wouldn’t-use. Both rejects came from revisions triggered by false flags.
+  Fixes: implied terms, and dismissing judge flags that restate the source.
+  Rejected after validating against ratings: a coverage requirement (it would have rejected the bullets the user liked best) and a keep-the-terms check (the user accepted a bullet without the tech stack).
+  Direction: safety by code, quality by user choice among candidates that all pass.
+
+  entry 6.9:
+
+  Fixes verified. No revisions from “HTML” flags; 7 judge flags dismissed as restating the source.
+  Judge record across both spikes: 1 real catch, about 11 false alarms, all on single-bullet rewrites.
+  Generic build verbs are now interchangeable; leadership verbs are excluded on purpose.
+
+  User ratings after the fixes were 6 as is, 4 with edits, 0 rejected (previously 4/4/2), and the revised bullet was usable.
+
 ---
 
 ## 7. Open items
