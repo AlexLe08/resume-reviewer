@@ -13,7 +13,8 @@
     "spike:tools": "tsx scripts/spikes/tools.ts",
     "match": "tsx scripts/match.ts",
     "eval:jobs": "tsx scripts/eval-jobs.ts",
-    "spike:bullets": "tsx scripts/spikes/bullets.ts"
+    "spike:bullets": "tsx scripts/spikes/bullets.ts",
+    "spike:judge": "tsx scripts/spikes/judge.ts"
   },
   "dependencies": {
     "@google/genai": "^1.20.0",

@@ -14,8 +14,8 @@
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { stems } from '@/lib/bullets/checks';
-import { improveBullet, type BulletTask, type LoopResult } from '@/lib/bullets/loop';
+import { extractNumbers, stems } from '@/lib/bullets/checks';
+import { improveBullet, sourcesText, type BulletTask, type LoopResult } from '@/lib/bullets/loop';
 import { getEnv } from '@/lib/env';
 import { modelName, providerName } from '@/lib/llm';
 
@@ -121,6 +121,12 @@ async function main(): Promise<void> {
     console.log(`    revisions                  ${rounds.length - all.length}`);
     console.log(`    caught: numbers ${caught('numbers')}, terms ${caught('terms')}, style ${caught('style')}, length ${caught('length')}, judge ${caught('claims')}`);
     console.log(`    judge flags dismissed      ${rounds.reduce((n, rd) => n + rd.dismissed.length, 0)}`);
+    const relationships = rounds.reduce((n, rd) => n + rd.unsupported.filter((u) => u.kind === 'relationship').length, 0);
+    console.log(`    relationship flags         ${relationships}`);
+    const sourceNumbers = extractNumbers(sourcesText(c));
+    const passing = mine.flatMap((r) => passedBullets(r.result));
+    const withNumbers = passing.filter((bullet) => [...extractNumbers(bullet)].some((n) => sourceNumbers.has(n))).length;
+    console.log(`    passing with a source number ${withNumbers}/${passing.length}`);
     console.log(`    max overlap (median)       ${(overlaps[Math.floor(overlaps.length / 2)] ?? 0).toFixed(2)}  (between passing candidates; lower = more distinct)`);
     console.log(`    time per run (median)      ${(times[Math.floor(times.length / 2)] ?? 0).toFixed(1)} s`);
   }
