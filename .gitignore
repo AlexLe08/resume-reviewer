@@ -10,3 +10,6 @@ next-env.d.ts
 # Keep real resumes out of the repo. Put test files here instead.
 fixtures/private/
 eval-results/
+
+# Claude Code: personal permission rules. The shared .claude/settings.json is committed.
+.claude/settings.local.json

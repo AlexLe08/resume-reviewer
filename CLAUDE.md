@@ -8,16 +8,18 @@ Resume Reviewer: a Next.js + TypeScript app that shows what a parser extracts fr
 
 ## Commands
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Dev server. Restart after editing `.env.local` (settings are cached) |
-| `npm test` / `npm run typecheck` | Vitest / `tsc --noEmit`. Both must pass before a commit |
-| `npm run eval` | Review evals: fixtures × runs, results in `eval-results/` with the git commit |
-| `npm run eval -- --rescore <file>` | Re-apply current expectations to saved results, no model calls |
-| `npm run eval:jobs -- --stage extract\|match\|both` | Job-matching evals; also `--only`, `--runs`, `--rescore` |
-| `npm run match -- --resume <pdf> --job <txt>` | One job match in the terminal |
-| `npm run spike:bullets` / `npm run spike:judge` | Bullet-loop and judge spikes |
-| `LLM_PROVIDER=mock npm run …` | Instant, no model: for UI work and checking plumbing |
+| Command                                                                      | What it does                                                                                                           |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                                                                | Dev server. Restart after editing `.env.local` (settings are cached)                                                   |
+| `npm test` / `npm run typecheck`                                             | Vitest / `tsc --noEmit`. Both must pass before a commit                                                                |
+| `npx vitest run src/lib/bullets/checks.test.ts` / `npx vitest run -t "name"` | One test file / tests matching a name. Tests are colocated as `src/**/*.test.ts`, node environment, `@` aliases `src/` |
+| `npm run build`                                                              | Next production build (there is no lint script)                                                                        |
+| `npm run eval`                                                               | Review evals: fixtures × runs, results in `eval-results/` with the git commit                                          |
+| `npm run eval -- --rescore <file>`                                           | Re-apply current expectations to saved results, no model calls                                                         |
+| `npm run eval:jobs -- --stage extract\|match\|both`                          | Job-matching evals; also `--only`, `--runs`, `--rescore`                                                               |
+| `npm run match -- --resume <pdf> --job <txt>`                                | One job match in the terminal                                                                                          |
+| `npm run spike:bullets` / `npm run spike:judge` / `npm run spike:tools`      | Bullet-loop, judge and tool-use spikes                                                                                 |
+| `LLM_PROVIDER=mock npm run …`                                                | Instant, no model: for UI work and checking plumbing                                                                   |
 
 Long runs: prefix with `caffeinate -i` (a sleeping Mac stalled a run for 19 minutes). Evals and spikes take 10–40 minutes on the local model: **ask before starting one**.
 
@@ -35,6 +37,8 @@ src/lib/checks/       deterministic resume checks, timeline (dates computed in c
 src/lib/review/       recruiter review: prompt, schema, grounding (quote checking), runReview()
 src/lib/jobs/         requirement extraction + matching (a workflow, not an agent: see DECISIONS §6.2)
 src/lib/bullets/      evaluator–optimizer loop: checks.ts (code checks), loop.ts (draft → check → judge → revise)
+src/lib/pdf/          PDF text extraction (unpdf)
+src/lib/http/         shared route helpers; src/lib/env.ts reads settings
 src/lib/stream/       NDJSON event types per stream, streaming JSON array-item reader
 src/lib/eval/         fixtures, assertions, reports for review and job evals
 src/app/api/          review, match, bullets routes (all stream NDJSON)
@@ -68,6 +72,7 @@ fixtures/             public fixtures; fixtures/private/ is gitignored (real res
 
 ## Privacy and constraints
 
+- `.claude/settings.json` denies Read on `fixtures/private/`, `eval-results/` and `.env*`. Don't ask the user to paste content from them: work from public fixtures, or ask the user to add a synthetic fixture that reproduces the issue. Ask before running a script on private fixtures, since its output may contain resume text.
 - Never commit or print resume content, notes, postings, or `eval-results/`. `DECISIONS.md` must contain no personal details.
 - Notes are used per request and never stored. Only writing-style settings persist (browser `localStorage`).
 - No-spend: development must cost nothing.
