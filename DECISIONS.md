@@ -253,6 +253,12 @@ Median time per review: ~78–86 s
   6.12
   Bullet writer in the app. The panel opens inline from a requirement marked Partly or Not shown. Up to three candidates are streamed as each passes its checks. The person’s edits are checked in the browser by the same code, as warnings rather than blocks. Writing style persists in the browser; notes are never stored. First real use: 3 of 3 candidates passed, and the user would use all three. Noted but not fixed: a question that asked for facts the notes may already contain (one occurrence, so the checks stay frozen).
 
+  6.13:
+
+  Judge relationship check, tested on labeled bullets: it caught 1 of 3 kinds of false link (only the false cause attached to a measured result), with 0 false alarms out of 4 correct bullets. It missed both purpose-clause false links from real use.
+  The judge is deterministic at temperature 0, so repeated runs aren’t independent samples. Use more labeled examples rather than more runs.
+  Proposed: notes grouped by the user, as an explicit statement of which facts belong together.
+
 ---
 
 ## 7. Open items

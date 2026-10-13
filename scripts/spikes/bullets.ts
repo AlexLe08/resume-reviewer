@@ -15,6 +15,7 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { extractNumbers, stems } from '@/lib/bullets/checks';
+import { taskFromFixture } from '@/lib/bullets/fixture';
 import { improveBullet, sourcesText, type BulletTask, type LoopResult } from '@/lib/bullets/loop';
 import { getEnv } from '@/lib/env';
 import { modelName, providerName } from '@/lib/llm';
@@ -35,8 +36,14 @@ async function loadCases(root: string): Promise<Case[]> {
       continue;
     }
     for (const file of files) {
-      const data = JSON.parse(await readFile(path.join(dir, file), 'utf8')) as Omit<Case, 'name'>;
-      cases.push({ ...data, notes: data.notes ?? [], name: prefix + file.replace('.bullet.json', '') });
+      const data = JSON.parse(await readFile(path.join(dir, file), 'utf8')) as Record<string, unknown>;
+      const task = taskFromFixture(data);
+      cases.push({
+        ...task,
+        name: prefix + file.replace('.bullet.json', ''),
+        description: String(data.description ?? ''),
+        expect: data.expect === 'ask' ? 'ask' : 'pass',
+      });
     }
   }
   return cases;

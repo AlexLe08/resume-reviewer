@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useId, useState, type ReactNode }
 import type { BulletState, CandidateView } from '@/hooks/useBulletStream';
 import type { CheckResult } from '@/lib/bullets/checks';
 import { editIssues, type EditContext } from '@/lib/bullets/edit-issues';
-import { parseStyle, type BulletRequest, type WritingStyle } from '@/lib/bullets/request';
+import { parseNoteGroups, parseStyle, type BulletRequest, type WritingStyle } from '@/lib/bullets/request';
 
 const MAX_WORDS = 30;
 
@@ -55,13 +55,14 @@ export function BulletPanel({ target, id }: { target: string; id: string }) {
 
   const { state } = writer;
   const busy = state.phase === 'drafting' || state.phase === 'checking';
-  const noteLines = notes.split('\n').map((n) => n.trim()).filter(Boolean);
+  const noteGroups = parseNoteGroups(notes);
+  const noteLines = noteGroups.flat();
   const canRun = !busy && !writer.blocked && (bullet.trim() !== '' || noteLines.length > 0);
 
   function run() {
     const style = parseStyle(writer.style);
     setLastRun({ bullet: bullet.trim(), notes: noteLines, maxWords: MAX_WORDS, avoid: style.avoid, noCodeSyntax: style.noCodeSyntax });
-    writer.run({ role: role.trim() || undefined, bullet: bullet.trim(), target, notes: noteLines, maxWords: MAX_WORDS, ...style });
+    writer.run({ role: role.trim() || undefined, bullet: bullet.trim(), target, noteGroups, maxWords: MAX_WORDS, ...style });
   }
 
   // Keep each candidate's position as its key: angles are written by the model and can repeat.
@@ -77,9 +78,12 @@ export function BulletPanel({ target, id }: { target: string; id: string }) {
         else is caught and removed before you see it.
       </p>
 
-      <Field label="Your notes" hint="One true fact per line. Every fact here can end up on your resume, so leave out guesses.">
+      <Field
+        label="Your notes"
+        hint="One true fact per line, and a blank line between unrelated pieces of work: facts in different groups never end up linked in one bullet. Every fact here can end up on your resume, so leave out guesses."
+      >
         {(fieldId, hintId) => (
-          <textarea id={fieldId} aria-describedby={hintId} className="text-input" rows={5} value={notes} disabled={busy} onChange={(e) => setNotes(e.target.value)} />
+          <textarea id={fieldId} aria-describedby={hintId} className="text-input" rows={8} value={notes} disabled={busy} onChange={(e) => setNotes(e.target.value)} />
         )}
       </Field>
 
@@ -148,6 +152,10 @@ export function BulletPanel({ target, id }: { target: string; id: string }) {
           <p className="candidates-intro">
             {passed.length === 1 ? 'One candidate passed every check.' : `${passed.length} candidates passed every check.`} Pick one, or
             two that cover different things. Edit freely; edits are checked against your notes too.
+          </p>
+          <p className="field-hint">
+            The checks make sure every fact comes from your notes. They can&apos;t fully check how facts are linked, so
+            read each one for that: did this really cause, enable, or improve that?
           </p>
           {passed.map(({ candidate, index }) => (
             <CandidateCard key={index} candidate={candidate} context={lastRun} />

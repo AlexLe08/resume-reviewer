@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { editIssues } from './edit-issues';
-import { BulletRequestSchema, DEFAULT_STYLE, parseStyle } from './request';
+import { BulletRequestSchema, DEFAULT_STYLE, parseNoteGroups, parseStyle } from './request';
 
 describe('parseStyle', () => {
   it('reads avoided words and replacements written either way', () => {
@@ -20,8 +20,13 @@ describe('parseStyle', () => {
 
 describe('BulletRequestSchema', () => {
   it('needs a bullet or at least one note', () => {
-    expect(BulletRequestSchema.safeParse({ notes: [] }).success).toBe(false);
-    expect(BulletRequestSchema.safeParse({ notes: ['Tested with NVDA.'] }).success).toBe(true);
+    expect(BulletRequestSchema.safeParse({ noteGroups: [] }).success).toBe(false);
+    expect(BulletRequestSchema.safeParse({ noteGroups: [['Tested with NVDA.']] }).success).toBe(true);
+  });
+
+  it('caps the total number of notes across groups', () => {
+    const many = Array.from({ length: 16 }, (_, i) => `Fact ${i}`);
+    expect(BulletRequestSchema.safeParse({ noteGroups: [many.slice(0, 8), many.slice(8)] }).success).toBe(false);
   });
 });
 
@@ -42,5 +47,18 @@ describe('editIssues', () => {
       'Includes code syntax: aria-label.',
       'Uses first person.',
     ]);
+  });
+});
+
+describe('parseNoteGroups', () => {
+  it('splits on blank lines and trims each fact', () => {
+    expect(parseNoteGroups('Built the harness.\n  Ran it nightly.  \n\n\nShipped matching.\n')).toEqual([
+      ['Built the harness.', 'Ran it nightly.'],
+      ['Shipped matching.'],
+    ]);
+  });
+
+  it('treats lines with only spaces as group breaks too', () => {
+    expect(parseNoteGroups('a\n   \nb')).toEqual([['a'], ['b']]);
   });
 });

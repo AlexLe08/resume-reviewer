@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { improveBullet, sourcesText } from './loop';
+import { taskFromFixture } from './fixture';
 
 beforeAll(() => {
   process.env.LLM_PROVIDER = 'mock';
@@ -8,7 +9,7 @@ beforeAll(() => {
 
 describe('sourcesText', () => {
   it('includes the bullet and notes but never the target requirement', () => {
-    const text = sourcesText({ bullet: 'Built search.', notes: ['Tested with NVDA.'], target: '5+ years of WCAG work', maxWords: 25 });
+    const text = sourcesText({ bullet: 'Built search.', noteGroups: [['Tested with NVDA.']], target: '5+ years of WCAG work', maxWords: 25 });
     expect(text).toContain('Tested with NVDA.');
     expect(text).not.toContain('WCAG');
   });
@@ -19,7 +20,7 @@ describe('improveBullet with the mock provider', () => {
     const drafted: string[] = [];
     const finished: [number, string][] = [];
     await improveBullet(
-      { bullet: 'Built a shared component library in React used by nine product teams', notes: [], maxWords: 25 },
+      { bullet: 'Built a shared component library in React used by nine product teams', noteGroups: [], maxWords: 25 },
       {
         log: false,
         onDrafted: (candidates) => drafted.push(...candidates.map((c) => c.angle)),
@@ -36,7 +37,7 @@ describe('improveBullet with the mock provider', () => {
   it('checks every candidate, judges the ones that pass the code checks, and keeps them', async () => {
     const seen: number[] = [];
     const result = await improveBullet(
-      { bullet: 'Built a shared component library in React used by nine product teams', notes: [], maxWords: 25 },
+      { bullet: 'Built a shared component library in React used by nine product teams', noteGroups: [], maxWords: 25 },
       { log: false, onRound: (i) => seen.push(i) },
     );
     expect(result.status).toBe('done');
@@ -48,7 +49,7 @@ describe('improveBullet with the mock provider', () => {
 
   it('revises a candidate that breaks a style rule, up to the round limit', async () => {
     const result = await improveBullet(
-      { bullet: 'Built a seamless library for internal partners', notes: [], maxWords: 25, avoid: ['seamless'] },
+      { bullet: 'Built a seamless library for internal partners', noteGroups: [], maxWords: 25, avoid: ['seamless'] },
       { log: false, maxRounds: 2 },
     );
     if (result.status !== 'done') throw new Error('expected done');
@@ -57,5 +58,13 @@ describe('improveBullet with the mock provider', () => {
     expect(first.status).toBe('failed');
     expect(first.rounds).toHaveLength(2);
     expect(first.rounds[0]?.checks.find((c) => c.id === 'style')?.passed).toBe(false);
+  });
+});
+
+describe('taskFromFixture', () => {
+  it('reads flat notes as one group and grouped notes as given', () => {
+    expect(taskFromFixture({ bullet: '', notes: ['a', 'b'], maxWords: 20 }).noteGroups).toEqual([['a', 'b']]);
+    expect(taskFromFixture({ bullet: '', noteGroups: [['a'], ['b']], maxWords: 20 }).noteGroups).toEqual([['a'], ['b']]);
+    expect(taskFromFixture({ bullet: 'x', notes: [], maxWords: 20 }).noteGroups).toEqual([]);
   });
 });

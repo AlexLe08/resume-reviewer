@@ -6,13 +6,22 @@ export const BulletRequestSchema = z
     role: z.string().trim().max(200).optional(),
     bullet: z.string().trim().max(600).default(''),
     target: z.string().trim().max(1000).optional(),
-    notes: z.array(z.string().trim().min(1).max(500)).max(15).default([]),
+    noteGroups: z.array(z.array(z.string().trim().min(1).max(500)).min(1)).max(8).default([]),
     avoid: z.array(z.string().trim().min(2).max(40)).max(30).default([]),
     prefer: z.record(z.string(), z.string().trim().max(80)).default({}),
     noCodeSyntax: z.boolean().default(false),
     maxWords: z.number().int().min(10).max(60).default(30),
   })
-  .refine((r) => r.bullet !== '' || r.notes.length > 0, { error: 'Add a bullet to improve, or at least one note.' });
+  .refine((r) => r.bullet !== '' || r.noteGroups.length > 0, { error: 'Add a bullet to improve, or at least one note.' })
+  .refine((r) => r.noteGroups.flat().length <= 15, { error: 'Keep it to 15 notes or fewer.' });
+
+/** Notes as typed: one fact per line, a blank line between unrelated pieces of work. */
+export function parseNoteGroups(text: string): string[][] {
+  return text
+    .split(/\n\s*\n/)
+    .map((block) => block.split('\n').map((line) => line.trim()).filter(Boolean))
+    .filter((group) => group.length > 0);
+}
 
 export type BulletRequest = z.input<typeof BulletRequestSchema>;
 

@@ -22,8 +22,12 @@ export interface BulletTask {
   bullet: string;
   /** A requirement the bullet should speak to. Not a source of facts. */
   target?: string;
-  /** True details from the candidate that the resume doesn't say yet. */
-  notes: string[];
+  /**
+   * True details from the candidate that the resume doesn't say yet, grouped by
+   * piece of work. Facts in different groups are unrelated: the candidate says
+   * which facts belong together, so the model doesn't have to guess.
+   */
+  noteGroups: string[][];
   maxWords: number;
   /** Words the candidate doesn't use, enforced by code. */
   avoid?: string[];
@@ -95,16 +99,31 @@ const JudgeSchema = z.object({
     .max(6),
 });
 
+export function allNotes(task: Pick<BulletTask, 'noteGroups'>): string[] {
+  return task.noteGroups.flat();
+}
+
 /** The only text facts may come from. The role and target are deliberately excluded. */
 export function sourcesText(task: BulletTask): string {
-  return [task.bullet, ...task.notes].filter(Boolean).join('\n');
+  return [task.bullet, ...allNotes(task)].filter(Boolean).join('\n');
+}
+
+function notesBlock(task: BulletTask): string {
+  const groups = task.noteGroups.filter((g) => g.length > 0);
+  if (groups.length === 0) return "Candidate's notes: (none)";
+  const list = (g: string[]) => g.map((n) => `- ${n}`).join('\n');
+  if (groups.length === 1) return `Candidate's notes:\n${list(groups[0]!)}`;
+  return [
+    "Candidate's notes, grouped by piece of work. Facts in different groups are unrelated:",
+    ...groups.map((g, i) => `Group ${i + 1}:\n${list(g)}`),
+  ].join('\n');
 }
 
 function sourcesBlock(task: BulletTask): string {
   const lines = [
     task.role ? `Role (context only, don't restate it in the bullet): ${task.role}` : '',
     task.bullet ? `Original bullet: ${task.bullet}` : 'Original bullet: (none; write new bullets from the notes)',
-    task.notes.length > 0 ? `Candidate's notes:\n${task.notes.map((n) => `- ${n}`).join('\n')}` : "Candidate's notes: (none)",
+    notesBlock(task),
     ...Object.entries(task.prefer ?? {}).map(
       ([word, instead]) => `Candidate's preferred wording: "${instead}" in place of "${word}".`,
     ),
@@ -119,6 +138,9 @@ function rules(task: BulletTask): string {
     'Don\'t end on a generic purpose like "to improve accessibility" or "to enhance the user experience" unless the sources state that result. End on the concrete work instead.',
     task.avoid && task.avoid.length > 0 ? `Never use these words: ${task.avoid.join(', ')}.` : '',
     ...Object.entries(task.prefer ?? {}).map(([word, instead]) => `Instead of "${word}", say "${instead}".`),
+    task.noteGroups.filter((g) => g.length > 0).length > 1
+      ? 'Each bullet uses facts from one group of notes only. Never combine or link facts from different groups.'
+      : '',
     task.noCodeSyntax ? 'Name techniques, not code: write "ARIA attributes" or "semantic headings", not attribute names, role=…, or HTML tags.' : '',
     'If a target requirement is given, show how the sources\' facts relate to it. Don\'t claim any part of it the sources don\'t support, and don\'t borrow its wording as if it were a fact.',
   ]
@@ -130,6 +152,7 @@ const JUDGE_SYSTEM = [
   'You check a resume bullet against its sources for unsupported claims.',
   'List every part of the bullet the sources do not support: added numbers, tools, technologies, standards, scope (team size, users, scale), outcomes, or responsibilities. Mark these "fact".',
   'Also list any relationship the sources do not state: the bullet saying one piece of work caused, enabled, improved, or was part of another, when the sources describe them as separate facts. Mark these "relationship".',
+  'When the notes are grouped, facts in different groups are unrelated: any bullet that links or combines facts from different groups states an unsupported relationship.',
   'Rewording or summarizing supported facts is fine. General phrasing that clearly follows from the sources is fine.',
   'If everything is supported, return an empty list.',
 ].join('\n');
@@ -309,7 +332,7 @@ function failure(outcome: StructuredOutcome<unknown> & { ok: false }, candidates
  * half, so the multi-candidate path always runs with two distinct candidates.
  */
 function mockDraft(task: BulletTask) {
-  const words = (task.bullet || task.notes[0] || '').split(/\s+/).filter(Boolean);
+  const words = (task.bullet || allNotes(task)[0] || '').split(/\s+/).filter(Boolean);
   const full = words.slice(0, task.maxWords);
   return {
     candidates: [

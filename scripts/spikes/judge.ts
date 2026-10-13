@@ -1,12 +1,18 @@
 /**
  * SPIKE: what does the judge catch on its own? Runs it on bullets with a known
- * answer (fixtures/private/bullets/judge-labels.json), several times each.
+ * answer (fixtures/private/bullets/judge-labels.json).
  *
- *   npm run spike:judge                  5 runs per bullet
+ * The judge runs at temperature 0 and gave identical answers across repeated
+ * runs, so one run per bullet is the default: more labeled bullets tell us
+ * more than more runs of the same ones.
+ *
+ *   npm run spike:judge                  1 run per bullet
+ *   npm run spike:judge -- --runs 3      check it's still deterministic
  */
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { taskFromFixture } from '@/lib/bullets/fixture';
 import { judgeBullet, type BulletTask } from '@/lib/bullets/loop';
 import { getEnv } from '@/lib/env';
 import { modelName, providerName } from '@/lib/llm';
@@ -23,7 +29,7 @@ async function main(): Promise<void> {
   } catch {
     // Rely on the shell environment.
   }
-  const { values } = parseArgs({ options: { runs: { type: 'string', default: '5' } } });
+  const { values } = parseArgs({ options: { runs: { type: 'string', default: '1' } } });
   const runs = Number(values.runs);
   getEnv();
 
@@ -31,7 +37,7 @@ async function main(): Promise<void> {
   const { items } = JSON.parse(await readFile(path.join(dir, 'judge-labels.json'), 'utf8')) as { items: Item[] };
   const tasks = new Map<string, BulletTask>();
   for (const name of new Set(items.map((i) => i.case))) {
-    tasks.set(name, JSON.parse(await readFile(path.join(dir, `${name}.bullet.json`), 'utf8')) as BulletTask);
+    tasks.set(name, taskFromFixture(JSON.parse(await readFile(path.join(dir, `${name}.bullet.json`), 'utf8')) as Record<string, unknown>));
   }
 
   console.log(`Judge spike: ${items.length} labeled bullet(s) × ${runs} run(s) with ${providerName()} / ${modelName()}\n`);
