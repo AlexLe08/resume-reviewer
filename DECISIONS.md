@@ -16,12 +16,12 @@ What we decided, why, what we rejected, and the evidence. Newest experiments at 
 
 - **Decision:** Build a resume reviewer with (1) deterministic parsing checks showing what a parser actually extracts, (2) job-description matching, and (3) multiple reviewer personas.
 - **Rejected:** Having the model "act like Workday / Taleo / Greenhouse." There is no free access to these systems and no ground truth to emulate, so the feedback would be confident and invented.
-- **Why:** Recruiter surveys indicate ATS rarely auto-reject on resume content; the real filters are knockout questions on application forms. What _is_ real and testable is parsing quality and keyword search. Honesty about this is also the product's differentiator in a crowded space.
+- **Why:** Recruiter surveys indicate ATS rarely auto-reject on resume content; the real filters are knockout questions on application forms. What *is* real and testable is parsing quality and keyword search. Honesty about this is also the product's differentiator in a crowded space.
 
 ### 1.2 No-spend constraint
 
 - **Decision:** Development must cost nothing. Local models (Ollama) by default; Gemini free tier for comparison only.
-- **Consequence:** Free to _build_, not free to _run_ for real users. The hosted product's model access (paid tier with limits, bring-your-own-key, or in-browser) is deferred to Phase 5.
+- **Consequence:** Free to *build*, not free to *run* for real users. The hosted product's model access (paid tier with limits, bring-your-own-key, or in-browser) is deferred to Phase 5.
 
 ### 1.3 Privacy
 
@@ -50,7 +50,7 @@ What we decided, why, what we rejected, and the evidence. Newest experiments at 
 
 ### 2.4 Structured output, validated
 
-- One Zod schema becomes the JSON Schema sent to the model _and_ validates the response. "The API promised" is not the same as "we checked."
+- One Zod schema becomes the JSON Schema sent to the model *and* validates the response. "The API promised" is not the same as "we checked."
 - Every finding must quote the resume (`evidence`). No 1–10 score: LLM scores are poorly calibrated; a yes/maybe/no verdict plus specific findings is more honest.
 
 ### 2.5 Deterministic code before the LLM
@@ -88,7 +88,7 @@ What we decided, why, what we rejected, and the evidence. Newest experiments at 
 
 ### 3.5 Log what actually happened
 
-- Usage logs record the model the provider _reports_ serving the request, not just the one we asked for.
+- Usage logs record the model the provider *reports* serving the request, not just the one we asked for.
 
 ---
 
@@ -118,6 +118,11 @@ What we decided, why, what we rejected, and the evidence. Newest experiments at 
 4. **Read failing reviews before acting.** Checks fail in both directions (see 5.8).
 5. **Write predictions and success bars down before the run.**
 6. Use `--runs 5` for fixtures under active change; `caffeinate -i` for long runs (a sleeping Mac stalled one run for 19 minutes); report median, not mean, latency.
+
+7. **Changing an expected answer needs a rule taken from the requirement's wording** ("or" = any one is enough, "and" = all), applied to every requirement, and verified by rescoring. Otherwise it's moving the goalposts.
+8. **A temperature-0 judge repeats its answers exactly.** Repeated runs aren't independent samples: measure with more labeled examples, not more runs.
+9. **Check against human ratings before enforcing a quality check.** Two plausible checks (coverage, keep-the-terms) contradicted the user's ratings and were never enforced.
+10. **The bullet checks are frozen.** A new heuristic needs a failure seen across new bullets, not one fixture. Every heuristic added so far fixed one case in three fixtures: that's tuning to the tests.
 
 ---
 
@@ -175,96 +180,102 @@ Median time per review: ~78–86 s
 
 ---
 
-## 6. Phase 2: job-description matching
+## 6. Phase 2: job matching and the bullet writer
 
 ### 6.1 Spike: can the local model drive a tool loop? (`scripts/spikes/tools.ts`)
 
 - Requirements worded like the resume: 5/5 runs finished, 20/20 verdicts, 15/15 evidence from tools, 0 invalid calls, median 43 s. **Mechanics: yes.**
-- Requirements worded like real postings (synonyms): 17/25. The search tool matched _any_ word, so "design system" returned an unrelated accessibility line; the model treated it as a weak match and rarely searched again with different words (1 retry after 5 empty searches).
+- Requirements worded like real postings (synonyms): 17/25. The search tool matched *any* word, so "design system" returned an unrelated accessibility line; the model treated it as a weak match and rarely searched again (1 retry after 5 empty searches).
 
 ### 6.2 Agent vs. direct baseline (same requirements, same scoring, 5 runs each)
 
-|                                         | Direct (whole resume in prompt, one structured call) | Agent (resume hidden, tools only) |
-| --------------------------------------- | ---------------------------------------------------- | --------------------------------- |
-| Verdicts correct                        | **25/25**                                            | 13/25                             |
-| Evidence grounded                       | 20/20                                                | 15/15                             |
-| Median time                             | **54 s**                                             | 80 s                              |
-| Design system (synonym)                 | 5/5                                                  | 0/5                               |
-| GraphQL listed only in skills (partial) | 5/5                                                  | 1/5                               |
-| Performance (evidence uses other words) | 5/5                                                  | 2/5                               |
+| | Direct (whole resume in prompt, one structured call) | Agent (resume hidden, tools only) |
+|---|---|---|
+| Verdicts correct | **25/25** | 13/25 |
+| Evidence grounded | 20/20 | 15/15 |
+| Median time | **54 s** | 80 s |
+| Design system (synonym) | 5/5 | 0/5 |
+| GraphQL listed only in skills (partial) | 5/5 | 1/5 |
+| Performance (evidence uses other words) | 5/5 | 2/5 |
 
-- **Finding:** The model's judgment is good when it can see the whole resume. The agent's failures came from what the tools showed it, not from reasoning. Hiding a one- to two-page resume behind search created the problem the agent then failed to solve.
-- **Decision:** Job matching is a **workflow**: extract requirements from the posting, then match them in one structured call with the full resume and code-computed facts (e.g. years of experience). The spike is kept as a record, not built on.
-- **Where the agent loop goes instead:** somewhere looking things up and iterating genuinely adds value that one call can't provide. Leading candidate: an evaluator–optimizer loop for rewriting bullets (draft a rewrite → check it against the resume with tools and code → revise until it holds up).
-- **Rejected for now:** semantic (embedding) search to rescue the matching agent. It would fix a problem only the agent design has.
+- **Finding:** the model's judgment is good when it can see the whole resume. The agent's failures came from what the tools showed it. Hiding a one- to two-page resume behind search created the problem the agent then failed to solve.
+- **Decision:** job matching is a **workflow**: extract requirements, then match them in one structured call with the full resume and code-computed facts. The agent loop goes where iterating adds value a single call can't: bullet writing (6.8 onward).
+- **Rejected:** semantic (embedding) search to rescue the matching agent. It fixes a problem only the agent design has.
 
-  6.3:
+### 6.3 Job-matching evals and baseline (`615ae81`)
 
-  Extraction: 132/132 found, tiers 132/132, 0 extras, 0 boilerplate, 0 reworded.
-  Matching: 128/132 accepted (97%) at commit 615ae81.
-  The degree: met 2 of 4 runs, and evidence came from the degree line, not from experience.
+- Extraction and matching are evaluated **separately**: matching runs against each fixture's saved requirement list, so an extraction mistake can't show up as a matching failure. Expected answers reflect **what the resume shows, not what the candidate knows** (missing accessibility work is a resume gap, not a model error).
+- Extraction: **132/132** found, tiers 132/132, 0 extras, 0 boilerplate, 0 reworded. Matching: 128/132 (97%).
+- The degree requirement ("…or equivalent practical experience") was met in only 2 of 4 runs, and when met, the evidence was the degree line rather than experience.
 
-  6.4
-  Equivalent-experience fact (a6564b9): Chewy #12 went from met 2/4 to 5/5. Northwind’s degree held at 5/5. The evidence is still messy: only 2/5 runs cited work experience, and 1 run quoted the fact itself.
-  Label correction: #18 was mislabeled. It’s an “or” list, and one item is clearly shown. The rule is now “or = any one, and = all”, applied to all 37 requirements; only #18 changed. Verified by rescoring.
-  Next: put quotable date ranges into the experience fact.
+### 6.4 Equivalent experience stated as a fact (`a6564b9`); a label correction
 
-  6.5
-  Quotable date ranges (442d1a8): evidence for computed requirements went from about 2 in 5 to 13/15, with all verdicts at 100%. But the passing quotes were weak (a single 10-month role offered as proof of 6+ years), and the fact was still quoted twice.
-  Decision: for requirements that state a number of years or accept equivalent experience, code supplies the evidence: the total plus the date ranges. The model still decides the status.
-  Rejected: restoring the stricter “never quote facts” heading, because it only lowers the failure rate, and the evidence it allows is still weak.pr
+- Code detects "or equivalent … experience" and states it next to that requirement with the computed experience total. Degree: met 2/4 → **5/5**.
+- **Label correction:** one requirement was an "or" list ("monorepos, package publishing, … or migration tooling") mislabeled as needing everything. Rule adopted: "or" = any one, "and" = all; applied to all 37 requirements, only that one changed; verified by rescoring (exactly 3 intended flips, nothing else).
 
-  6.6
-  Code-supplied evidence (9e079c5): the new job-matching baseline. 132/132 accepted on all three fixtures, and 89/89 real quotes grounded. Computed evidence doesn’t count toward grounding.
-  Empty gaps: they started after the date-range change, appearing in 3 of 8 Chewy runs and always on the same three “missing” bonus requirements. Code now fills them in with a flag, so the eval still counts the omission.
+### 6.5 Evidence for computed requirements (`442d1a8` → `9e079c5`)
 
-  6.7:
+- Quotable date ranges in the fact raised good evidence from ~2 in 5 to 13/15, but the passing evidence was weak (a single 10-month role offered as proof of 6+ years) and the fact was still quoted twice.
+- **Decision:** for requirements stating years or accepting equivalent experience, **code supplies the evidence** (the total and its date ranges). The model still decides the status.
+- **Rejected:** restoring the stricter "never quote facts" heading: it lowers a failure rate; this removes the failure.
 
-  Job matching in the app. Results are streamed item by item: complete items are read from the model’s JSON as it arrives, validated one by one, and checked with the same code as the final report. A test confirms streamed and final results are identical. The general partial-JSON parsing approach was rejected: it shows half-written text and can’t validate items until they’re whole.
-  Display changes. Calculated evidence is labeled as calculated. A repeated quote is shown in full once, then referred back to. Cancel stops the model.
-  Open items: verdicts can differ between runs of the same input, and job evals have no check against summary-as-evidence.
+### 6.6 Job-matching baseline (`9e079c5`)
 
-  6.8:
+- **132/132 accepted** across all three fixtures; **89/89** model-chosen quotes grounded (computed evidence excluded from grounding stats).
+- Empty gaps on "missing" answers appeared after the date-range change (3 of 8 runs, always the same three requirements). Code fills "Not shown on the resume." and flags it, so evals still count the omission.
 
-  Bullet loop, first spike: 15/15 by the automated bar, but user ratings showed 4 use-as-is, 4 use-with-edits, and 2 wouldn’t-use. Both rejects came from revisions triggered by false flags.
-  Fixes: implied terms, and dismissing judge flags that restate the source.
-  Rejected after validating against ratings: a coverage requirement (it would have rejected the bullets the user liked best) and a keep-the-terms check (the user accepted a bullet without the tech stack).
-  Direction: safety by code, quality by user choice among candidates that all pass.
+### 6.7 Job matching in the app
 
-  entry 6.9:
+- Results stream requirement by requirement: the server reads each complete item from the model's JSON as it arrives, validates it, and sends it as its own event, using the same code as the final report (a test confirms streamed equals final).
+- **Rejected:** a general partial-JSON parser (half-written strings flicker and can't be validated) and parsing in the browser.
+- Display: calculated evidence is labeled; a repeated quote is shown once, then referred back to; "Not shown" rather than "Missing" (the tool judges the resume, not the person); red only for required qualifications.
 
-  Fixes verified. No revisions from “HTML” flags; 7 judge flags dismissed as restating the source.
-  Judge record across both spikes: 1 real catch, about 11 false alarms, all on single-bullet rewrites.
-  Generic build verbs are now interchangeable; leadership verbs are excluded on purpose.
+### 6.8 Bullet loop, first spike
 
-  User ratings after the fixes were 6 as is, 4 with edits, 0 rejected (previously 4/4/2), and the revised bullet was usable.
+- Evaluator–optimizer loop: draft → code checks (numbers, named terms, length, first person) → model judge for unsupported claims → revise with specific failures. The target requirement is never a source of facts.
+- 15/15 by the automated bar, but user ratings were 4 use-as-is, 4 with edits, **2 rejected**, and both rejects came from revisions triggered by false flags (an "HTML" term flag; a judge flag on restated source text).
+- Lesson: the checks measured safety, never quality; "passes every check" rewarded vague bullets.
 
-  6.10:
+### 6.9 Fixing false flags, validated against ratings
 
-  Candidates from different angles: 3 out of 3 runs gave a real choice on accessibility, with the angles distinct (overlap 0.04). All avoided words were enforced. The vague case still asked for the real result 3 out of 3 times.
-  Gaps: a plausible technical detail (role=group) passed every check. The judge missed “developed features” after catching a similar claim before. Paraphrases forced by the avoid list triggered false judge flags; the fix is letting the candidate state their preferred replacement.
+- Fixes: implied terms (VoiceOver → screen readers, `<h2>` → HTML); dismissing judge flags whose words all appear in the sources; generic build verbs interchangeable (leadership verbs excluded on purpose).
+- Ratings after: 6 as is, 4 with edits, **0 rejected**.
+- **Rejected after checking against ratings:** a coverage requirement (it would have rejected the bullets rated best) and keep-the-terms (the user accepted a bullet without the tech stack).
+- Judge record at that point: 1 real catch, ~11 false alarms, all on single-bullet rewrites.
 
-  6.11:
+### 6.10 Candidates from different angles
 
-  The code-syntax rule is a personal style setting: specifics belong in the interview, and resumes use category terms.
-  Lowercase-term checking in code was rejected: it would either break rewording or require a dictionary that’s never complete. The judge and the human pick cover it.
-  Checks are frozen. A new heuristic requires a failure seen across new bullets.
+- One draft call produces up to three candidates from different angles; each is checked and revised independently. Accessibility: three distinct angles in 3/3 runs (overlap 0.04), including the zoom fix and the screen readers by name.
+- **Safety by code, quality by choice.** The user's personal style (avoided words, preferred replacements) is enforced in code, not just requested in the prompt. Universal rule added to the prompt: no generic purpose endings ("to improve accessibility") without a stated result.
 
-  6.12
-  Bullet writer in the app. The panel opens inline from a requirement marked Partly or Not shown. Up to three candidates are streamed as each passes its checks. The person’s edits are checked in the browser by the same code, as warnings rather than blocks. Writing style persists in the browser; notes are never stored. First real use: 3 of 3 candidates passed, and the user would use all three. Noted but not fixed: a question that asked for facts the notes may already contain (one occurrence, so the checks stay frozen).
+### 6.11 Code syntax kept out of bullets; checks frozen
 
-  6.13:
+- Code-level details (`role=group`, `aria-labelledby`, `<h2>`) are a personal style setting: category terms on the resume, specifics in the interview.
+- **Rejected:** checking every lowercase term in code. It either breaks rewording or needs a technology dictionary that's never complete.
+- The bullet checks are frozen (4.4, rule 10).
 
-  Judge relationship check, tested on labeled bullets: it caught 1 of 3 kinds of false link (only the false cause attached to a measured result), with 0 false alarms out of 4 correct bullets. It missed both purpose-clause false links from real use.
-  The judge is deterministic at temperature 0, so repeated runs aren’t independent samples. Use more labeled examples rather than more runs.
-  Proposed: notes grouped by the user, as an explicit statement of which facts belong together.
+### 6.12 Bullet writer in the app
+
+- Opens inline from any requirement marked Partly or Not shown. Candidates stream as each passes; failing ones are counted, never offered. The user's edits are checked in the browser by the same code, as warnings, not blocks. Writing style persists in the browser; notes are never stored. One request at a time across review, match, and bullets.
+- First real use: 3 of 3 candidates passed, all usable.
+
+### 6.13 False links between facts (in progress)
+
+- The project's own bullets linked separate systems ("a bullet loop… to improve employment-gap detection"). The checks guarantee every fact comes from the notes, not that links between facts are true.
+- Judge given a "relationship" category; relationship flags are never dismissed. Side effect: judge false alarms dropped to 0 in the next spike (footer: 24 flags → 0).
+- Judge tested on labeled bullets: caught **1 of 3** kinds of false link (only a false cause attached to a measured result), missed both purpose-clause links ("to improve", "to ensure"); **0 false alarms** on 4 correct bullets.
+- **Proposed and built, not yet measured:** user-grouped notes (a blank line between unrelated work); bullets stay within one group; the judge treats links across groups as unsupported. A false link *within* one group is out of its reach; the interface tells the user to check links.
 
 ---
 
 ## 7. Open items
 
-- **Proofreader persona** (Phase 3): close the typo gap (~37%).
-- **Fact quoted as resume text:** ~1 run in 10. The stricter "never quote facts" heading was reverted for a reason later disproved; restoring it is an option if this grows.
-- **Stitched role-header quotes** (title joined to dates, skipping the location): 2 in ~15 runs. Correctly flagged; no fix yet.
-- **Phase 3 latency:** ~80 s per review locally and one request at a time on 16 GB. Five personas means minutes per resume; stream each reviewer's result as it finishes.
-- **Hosted-model decision** (Phase 5): paid tier with limits, bring-your-own-key, or in-browser.
+- **Proofreader reviewer** (Phase 3): the typo gap (~37%). First test a code spell checker against the model.
+- **Verdicts vary between runs** of the same input: lower temperature, majority vote, or showing borderline verdicts.
+- **Job evals lack a summary-as-evidence check** (review evals have one).
+- **Number use in project bullets is intermittent** (5 of 12 candidates). Watching, not fixing.
+- **The model sometimes asks for facts the notes already contain** (seen once).
+- **Fact quoted as resume text** in reviews (~1 run in 10), and **stitched role-header quotes**: correctly flagged, not fixed.
+- **Latency**: ~80 s per review, 2–5 min per bullet run, one request at a time on 16 GB.
+- `useReviewStream` hasn't moved onto `useNdjsonRequest`.
+- **Hosted-model decision** (Phase 5): mock demo mode, bring-your-own-key, or paid with limits.
