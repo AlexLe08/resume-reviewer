@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./fixtures/private/**)",
+      "Read(./eval-results/**)",
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  }
+}
