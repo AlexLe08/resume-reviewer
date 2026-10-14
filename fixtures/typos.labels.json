@@ -1,0 +1,164 @@
+{
+  "description": "strong-frontend with planted errors: 6 non-words, 5 real-word errors, 3 tech-casing errors, and 10 correct-but-uncommon terms that must not be flagged.",
+  "resume": "typos.txt",
+  "items": [
+    {
+      "id": "n1",
+      "kind": "nonword",
+      "text": "bookign",
+      "context": "the bookign flow",
+      "fix": "booking"
+    },
+    {
+      "id": "n2",
+      "kind": "nonword",
+      "text": "abandonmnet",
+      "context": "checkout abandonmnet",
+      "fix": "abandonment"
+    },
+    {
+      "id": "n3",
+      "kind": "nonword",
+      "text": "accesible",
+      "context": "building accesible,",
+      "fix": "accessible"
+    },
+    {
+      "id": "n4",
+      "kind": "nonword",
+      "text": "regresion",
+      "context": "visual regresion checks",
+      "fix": "regression"
+    },
+    {
+      "id": "n5",
+      "kind": "nonword",
+      "text": "fliters",
+      "context": "faceted fliters",
+      "fix": "filters"
+    },
+    {
+      "id": "n6",
+      "kind": "nonword",
+      "text": "markting",
+      "context": "markting sites",
+      "fix": "marketing"
+    },
+    {
+      "id": "r1",
+      "kind": "realword",
+      "text": "form",
+      "context": "abandonmnet form 38%",
+      "fix": "from"
+    },
+    {
+      "id": "r2",
+      "kind": "realword",
+      "text": "to were",
+      "context": "to were promoted",
+      "fix": "two were"
+    },
+    {
+      "id": "r3",
+      "kind": "realword",
+      "text": "Lead",
+      "context": "Lead the rebuild",
+      "fix": "Led"
+    },
+    {
+      "id": "r4",
+      "kind": "realword",
+      "text": "too",
+      "context": "resizing too the",
+      "fix": "to"
+    },
+    {
+      "id": "r5",
+      "kind": "realword",
+      "text": "uses",
+      "context": "monthly uses",
+      "fix": "users"
+    },
+    {
+      "id": "c1",
+      "kind": "tech-casing",
+      "text": "Javascript",
+      "context": "Javascript,",
+      "fix": "JavaScript"
+    },
+    {
+      "id": "c2",
+      "kind": "tech-casing",
+      "text": "Github",
+      "context": "Github:",
+      "fix": "GitHub"
+    },
+    {
+      "id": "c3",
+      "kind": "tech-casing",
+      "text": "Graphql",
+      "context": "Graphql,",
+      "fix": "GraphQL"
+    },
+    {
+      "id": "t1",
+      "kind": "trap",
+      "text": "Playwright",
+      "context": "Playwright, Accessibility"
+    },
+    {
+      "id": "t2",
+      "kind": "trap",
+      "text": "Next.js",
+      "context": "Next.js"
+    },
+    {
+      "id": "t3",
+      "kind": "trap",
+      "text": "Node.js",
+      "context": "Node.js"
+    },
+    {
+      "id": "t4",
+      "kind": "trap",
+      "text": "Jest",
+      "context": "Jest, Playwright"
+    },
+    {
+      "id": "t5",
+      "kind": "trap",
+      "text": "Northwind",
+      "context": "Northwind"
+    },
+    {
+      "id": "t6",
+      "kind": "trap",
+      "text": "Contoso",
+      "context": "Contoso"
+    },
+    {
+      "id": "t7",
+      "kind": "trap",
+      "text": "Fabrikam",
+      "context": "Fabrikam"
+    },
+    {
+      "id": "t8",
+      "kind": "trap",
+      "text": "Puppeteer",
+      "context": "Puppeteer"
+    },
+    {
+      "id": "t9",
+      "kind": "trap",
+      "text": "Akamai",
+      "context": "Akamai"
+    },
+    {
+      "id": "t10",
+      "kind": "trap",
+      "text": "Storybook",
+      "context": "Storybook"
+    }
+  ]
+}

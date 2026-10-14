@@ -1,0 +1,14 @@
+{
+  "description": "weak-duties: one definite typo, two style calls, and correct terms that must not be flagged.",
+  "resume": "weak-duties.txt",
+  "items": [
+    { "id": "n1", "kind": "nonword", "text": "Developped", "context": "Developped new pages", "fix": "Developed" },
+    { "id": "a1", "kind": "arguable", "text": "Hard working", "context": "Hard working and motivated" },
+    { "id": "a2", "kind": "arguable", "text": "Associate Degree", "context": "Associate Degree, Information" },
+    { "id": "t1", "kind": "trap", "text": "jQuery", "context": "jQuery" },
+    { "id": "t2", "kind": "trap", "text": "Lakeside", "context": "Lakeside Insurance | Jan 2021" },
+    { "id": "t3", "kind": "trap", "text": "Delaney", "context": "Mark Delaney" },
+    { "id": "t4", "kind": "trap", "text": "Microsoft Office", "context": "Microsoft Office" },
+    { "id": "t5", "kind": "trap", "text": "HTML", "context": "HTML, CSS" }
+  ]
+}

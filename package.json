@@ -14,7 +14,8 @@
     "match": "tsx scripts/match.ts",
     "eval:jobs": "tsx scripts/eval-jobs.ts",
     "spike:bullets": "tsx scripts/spikes/bullets.ts",
-    "spike:judge": "tsx scripts/spikes/judge.ts"
+    "spike:judge": "tsx scripts/spikes/judge.ts",
+    "spike:proofread": "tsx scripts/spikes/proofread.ts"
   },
   "dependencies": {
     "@google/genai": "^1.20.0",
@@ -28,6 +29,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "cspell-lib": "^10.4.0",
     "tsx": "^4.20.0",
     "typescript": "^5.6.0",
     "vitest": "^3.2.0"
