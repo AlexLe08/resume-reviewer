@@ -18,6 +18,7 @@ import { extractNumbers, stems } from '@/lib/bullets/checks';
 import { taskFromFixture } from '@/lib/bullets/fixture';
 import { improveBullet, sourcesText, type BulletTask, type LoopResult } from '@/lib/bullets/loop';
 import { getEnv } from '@/lib/env';
+import { gitInfo } from '@/lib/eval/git';
 import { modelName, providerName } from '@/lib/llm';
 
 interface Case extends BulletTask {
@@ -85,7 +86,11 @@ async function main(): Promise<void> {
   const cases = (await loadCases(root)).filter((c) => filters.length === 0 || filters.some((f) => c.name.includes(f)));
   if (cases.length === 0) throw new Error('No *.bullet.json cases found.');
 
-  console.log(`Bullet candidates spike: ${cases.length} case(s) × ${runs} run(s) with ${providerName()} / ${modelName()}\n`);
+  const git = gitInfo();
+  console.log(
+    `Bullet candidates spike: ${cases.length} case(s) × ${runs} run(s) with ${providerName()} / ${modelName()}\n` +
+      `commit: ${git.commit ?? 'unknown'}${git.dirty ? ' (uncommitted changes)' : ''}\n`,
+  );
   const records: { case: string; run: number; result: LoopResult; seconds: number }[] = [];
 
   for (const c of cases) {
@@ -141,7 +146,7 @@ async function main(): Promise<void> {
   const outDir = path.join(root, 'eval-results');
   await mkdir(outDir, { recursive: true });
   const file = path.join(outDir, `${new Date().toISOString().replace(/[:.]/g, '-')}_bullets_${providerName()}_${modelName().replace(/[^a-z0-9.-]/gi, '_')}.json`);
-  await writeFile(file, JSON.stringify({ meta: { provider: providerName(), model: modelName(), runs }, records }, null, 2));
+  await writeFile(file, JSON.stringify({ meta: { provider: providerName(), model: modelName(), runs, git }, records }, null, 2));
   console.log(`\nFull results: ${path.relative(root, file)}`);
 }
 
