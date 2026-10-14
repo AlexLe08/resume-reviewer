@@ -7,13 +7,13 @@
  *   npm run eval -- --only recent-gap     one fixture (matches by name)
  *   LLM_PROVIDER=gemini npm run eval      override a setting for one run
  */
-import { execSync } from 'node:child_process';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { getEnv } from '@/lib/env';
 import { checkExpectations } from '@/lib/eval/assertions';
 import { findFixtures, validateFixture, loadResume } from '@/lib/eval/fixtures';
+import { gitInfo } from '@/lib/eval/git';
 import { formatSummary, summarize, type RunRecord } from '@/lib/eval/report';
 import { modelName, providerName } from '@/lib/llm';
 import { PERSONAS, type PersonaId } from '@/lib/review/personas';
@@ -155,16 +155,6 @@ async function main(): Promise<void> {
   };
   await writeFile(file, JSON.stringify({ meta, summaries, records }, null, 2));
   console.log(`\nFull results: ${path.relative(root, file)}`);
-}
-
-/** Records which version of the prompt and code produced these numbers. */
-function gitInfo(): { commit: string | null; dirty: boolean | null } {
-  try {
-    const run = (cmd: string) => execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-    return { commit: run('git rev-parse --short HEAD'), dirty: run('git status --porcelain').length > 0 };
-  } catch {
-    return { commit: null, dirty: null };
-  }
 }
 
 function fixtureSources(root: string) {

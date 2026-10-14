@@ -10,12 +10,12 @@
  *   npm run eval:jobs -- --stage both
  *   npm run eval:jobs -- --only job-1 --runs 5
  */
-import { execSync } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { getEnv } from '@/lib/env'
 import { loadResume } from '@/lib/eval/fixtures'
+import { gitInfo } from '@/lib/eval/git'
 import {
   checkExtraction,
   checkMatches,
@@ -284,22 +284,6 @@ function median(values: (number | undefined)[]): string {
   const mid = Math.floor(sorted.length / 2)
   const ms = sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
   return `${(ms / 1000).toFixed(1)} s`
-}
-
-/** Records which version of the code produced these numbers. */
-function gitInfo(): { commit: string | null; dirty: boolean | null } {
-  try {
-    const run = (cmd: string) =>
-      execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] })
-        .toString()
-        .trim()
-    return {
-      commit: run('git rev-parse --short HEAD'),
-      dirty: run('git status --porcelain').length > 0,
-    }
-  } catch {
-    return { commit: null, dirty: null }
-  }
 }
 
 /**
