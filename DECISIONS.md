@@ -259,18 +259,26 @@ Median time per review: ~78–86 s
 - Opens inline from any requirement marked Partly or Not shown. Candidates stream as each passes; failing ones are counted, never offered. The user's edits are checked in the browser by the same code, as warnings, not blocks. Writing style persists in the browser; notes are never stored. One request at a time across review, match, and bullets.
 - First real use: 3 of 3 candidates passed, all usable.
 
-### 6.13 False links between facts (in progress)
+### 6.13 False links between facts (`1988884`)
 
 - The project's own bullets linked separate systems ("a bullet loop… to improve employment-gap detection"). The checks guarantee every fact comes from the notes, not that links between facts are true.
 - Judge given a "relationship" category; relationship flags are never dismissed. Side effect: judge false alarms dropped to 0 in the next spike (footer: 24 flags → 0).
 - Judge tested on labeled bullets: caught **1 of 3** kinds of false link (only a false cause attached to a measured result), missed both purpose-clause links ("to improve", "to ensure"); **0 false alarms** on 4 correct bullets.
-- **Proposed and built, not yet measured:** user-grouped notes (a blank line between unrelated work); bullets stay within one group; the judge treats links across groups as unsupported. A false link *within* one group is out of its reach; the interface tells the user to check links.
+- **Change (`1988884`):** user-grouped notes (a blank line between unrelated work); bullets stay within one group; the judge treats links across groups as unsupported. A false link *within* one group is out of its reach; the interface tells the user to check links.
+- **Success bar (set before running):** links across groups caught 4/4; correct bullets wrongly flagged 0/6; the within-group link recorded either way (predicted missed); no final candidate combines groups; "passing with a source number" keeps its baseline (5/12).
+- **Judge, 11 labeled bullets:** links across groups **caught 4/4**, all as "relationship", and the reasons name the groups. The within-group link ("comparing a tool-calling agent… to ensure accurate extraction") was **missed**, as predicted. Correct bullets wrongly flagged: **1/6** (bar 0/6). That bullet states two facts from one group: matching shipped as a workflow, and matching scored 132/132. The judge said the notes don't state the shipped workflow achieved 132/132, so it rejected a correct two-step inference. The run was repeated at `93185f7` (which only added logging) with the same 11 verdicts, as expected at temperature 0.
+- **Bullets, 4 cases × 3 runs:** 12/12 runs succeeded, 36/36 candidates passing. On project-ai no final candidate combines groups. Passing with a source number: 5/9 (baseline 5/12). One project-ai final has a within-group false link: round 1 was flagged as a relationship ("comparison… successfully grounding every quote"), and the revision restated the link with a number ("Compared… reaching 89/89 grounded quotes"), which the judge passed. The judge checks each round from scratch, without earlier flags.
+- **Conclusion:** grouping works for links across groups (4/4, 0 combined finals). Within one group the judge is unreliable in both directions (1 catch, 2 misses, 1 false alarm), so the safeguard there is the interface line telling the user to check links.
+- **Not fixing now:** each behavior is one example (4.4, rule 10). **Rejected for now:** a judge prompt change for the false alarm, which would change a shared prompt on one example.
+- **Prediction for the next spike:** if a revision restates a flagged link again, carry relationship flags forward to the next judge call.
 
 ---
 
 ## 7. Open items
 
 - **Proofreader reviewer** (Phase 3): the typo gap (~37%). First test a code spell checker against the model.
+- **Links within one group** are not reliably judged (1 catch, 2 misses, 1 false alarm on a correct two-step inference). Covered by the interface line; one example each, so no fix yet (6.13).
+- **A revision can restate a flagged link** with a number, and the judge then passes it, because each round is judged without earlier flags (seen once, 6.13). If it repeats, carry relationship flags forward.
 - **Verdicts vary between runs** of the same input: lower temperature, majority vote, or showing borderline verdicts.
 - **Job evals lack a summary-as-evidence check** (review evals have one).
 - **Number use in project bullets is intermittent** (5 of 12 candidates). Watching, not fixing.
