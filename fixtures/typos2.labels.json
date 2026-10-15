@@ -1,0 +1,164 @@
+{
+  "description": "recent-gap, extended: 3 non-words, 8 real-word errors, 3 tech-casing errors, 10 correct-but-uncommon terms.",
+  "resume": "typos2.txt",
+  "items": [
+    {
+      "id": "n1",
+      "kind": "nonword",
+      "text": "plyer",
+      "context": "the video plyer",
+      "fix": "player"
+    },
+    {
+      "id": "n2",
+      "kind": "nonword",
+      "text": "docuemnted",
+      "context": "and docuemnted 50+",
+      "fix": "documented"
+    },
+    {
+      "id": "n3",
+      "kind": "nonword",
+      "text": "responsve",
+      "context": "a responsve checkout",
+      "fix": "responsive"
+    },
+    {
+      "id": "r1",
+      "kind": "realword",
+      "text": "buy",
+      "context": "used buy 400,000",
+      "fix": "by"
+    },
+    {
+      "id": "r2",
+      "kind": "realword",
+      "text": "then",
+      "context": "more then 40%",
+      "fix": "than"
+    },
+    {
+      "id": "r3",
+      "kind": "realword",
+      "text": "affect",
+      "context": "larger affect than",
+      "fix": "effect"
+    },
+    {
+      "id": "r4",
+      "kind": "realword",
+      "text": "manger",
+      "context": "design manger",
+      "fix": "manager"
+    },
+    {
+      "id": "r5",
+      "kind": "realword",
+      "text": "latter",
+      "context": "a year latter",
+      "fix": "later"
+    },
+    {
+      "id": "r6",
+      "kind": "realword",
+      "text": "there",
+      "context": "to there leadership",
+      "fix": "their"
+    },
+    {
+      "id": "r7",
+      "kind": "realword",
+      "text": "mayor",
+      "context": "a mayor launch",
+      "fix": "major"
+    },
+    {
+      "id": "r8",
+      "kind": "realword",
+      "text": "loose",
+      "context": "would loose users",
+      "fix": "lose"
+    },
+    {
+      "id": "c1",
+      "kind": "tech-casing",
+      "text": "Javascript",
+      "context": "Javascript, Typescript",
+      "fix": "JavaScript"
+    },
+    {
+      "id": "c2",
+      "kind": "tech-casing",
+      "text": "Typescript",
+      "context": "Typescript, React",
+      "fix": "TypeScript"
+    },
+    {
+      "id": "c3",
+      "kind": "tech-casing",
+      "text": "jest",
+      "context": "Storybook, jest",
+      "fix": "Jest"
+    },
+    {
+      "id": "t1",
+      "kind": "trap",
+      "text": "Storybook",
+      "context": "Introduced Storybook"
+    },
+    {
+      "id": "t2",
+      "kind": "trap",
+      "text": "Vue.js",
+      "context": "apps in Vue.js"
+    },
+    {
+      "id": "t3",
+      "kind": "trap",
+      "text": "Webpack",
+      "context": "from Webpack"
+    },
+    {
+      "id": "t4",
+      "kind": "trap",
+      "text": "Vite",
+      "context": "to Vite"
+    },
+    {
+      "id": "t5",
+      "kind": "trap",
+      "text": "Cloudflare",
+      "context": "through Cloudflare"
+    },
+    {
+      "id": "t6",
+      "kind": "trap",
+      "text": "Sentry",
+      "context": "with Sentry"
+    },
+    {
+      "id": "t7",
+      "kind": "trap",
+      "text": "Tailwind",
+      "context": "in Tailwind"
+    },
+    {
+      "id": "t8",
+      "kind": "trap",
+      "text": "Okafor",
+      "context": "Sam Okafor"
+    },
+    {
+      "id": "t9",
+      "kind": "trap",
+      "text": "DePaul",
+      "context": "DePaul University"
+    },
+    {
+      "id": "t10",
+      "kind": "trap",
+      "text": "Lakeshore",
+      "context": "Lakeshore Media"
+    }
+  ]
+}

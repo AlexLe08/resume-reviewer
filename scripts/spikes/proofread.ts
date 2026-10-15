@@ -8,7 +8,7 @@
  *
  *   npm run spike:proofread                              fixtures/typos.labels.json, both approaches
  *   npm run spike:proofread -- --fixture fixtures/private/proofread.labels.json
- *   npm run spike:proofread -- --only code               instant, no model
+ *   npm run spike:proofread -- --only code|model|hybrid  one approach (hybrid also runs code first)
  *   npm run spike:proofread -- --show                    also print each flag (may contain resume text)
  */
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -23,7 +23,7 @@ import { runProofread } from '@/lib/proofread/model';
 import { countByKind, scoreFlags, type Flag, type KindCounts, type Scored } from '@/lib/proofread/score';
 
 interface Result {
-  approach: 'code' | 'model' | 'both';
+  approach: 'code' | 'model' | 'both' | 'hybrid';
   run: number;
   latencyMs: number;
   kinds: KindCounts;
@@ -60,7 +60,7 @@ function line(r: Result): string {
   return (
     `  ${r.approach.padEnd(6)} nonword ${frac(k.nonword)}  realword ${frac(k.realword)}  casing ${frac(k['tech-casing'])}  ` +
     `traps flagged ${r.trapsFlagged}/${r.trapsTotal}  other false alarms ${r.unlabeled}  style calls ${r.arguable}` +
-    (r.approach === 'model' ? `  ungrounded ${r.ungrounded}` : '') +
+    (r.approach === 'model' || r.approach === 'hybrid' ? `  ungrounded ${r.ungrounded}` : '') +
     `  ${r.latencyMs} ms`
   );
 }
@@ -81,7 +81,7 @@ async function main(): Promise<void> {
   });
   const runs = Number(values.runs);
   const only = values.only;
-  if (only !== undefined && only !== 'code' && only !== 'model') throw new Error('--only takes "code" or "model".');
+  if (only !== undefined && only !== 'code' && only !== 'model' && only !== 'hybrid') throw new Error('--only takes "code", "model" or "hybrid".');
   getEnv();
 
   const labeled = await loadLabeledResume(path.resolve(values.fixture));
@@ -100,17 +100,21 @@ async function main(): Promise<void> {
   };
 
   let codeFlags: Flag[] = [];
-  if (only !== 'model') {
+  let codeLatency: number | undefined;
+  if (only !== 'model') {  // code also feeds the hybrid
     const started = performance.now();
     const issues = await checkSpelling(labeled.doc.text);
     codeFlags = issues.map((i) => ({ word: i.word, context: i.context }));
-    const r = summarize('code', 1, Math.round(performance.now() - started), codeFlags, labeled.items);
-    results.push(r);
-    console.log(line(r));
-    show(r);
+    codeLatency = Math.round(performance.now() - started);
+    const r = summarize('code', 1, codeLatency, codeFlags, labeled.items);
+    if (only !== 'hybrid') {
+      results.push(r);
+      console.log(line(r));
+      show(r);
+    }
   }
 
-  if (only !== 'code') {
+  if (only === undefined || only === 'model') {
     for (let run = 1; run <= runs; run++) {
       const outcome = await runProofread(labeled.doc.text, { log: false });
       if (!outcome.ok) throw new Error(outcome.message);
@@ -125,6 +129,20 @@ async function main(): Promise<void> {
         results.push(both);
         console.log(line(both));
       }
+    }
+  }
+
+  if (only === undefined || only === 'hybrid') {
+    // The change under test: the model sees what code flagged and looks only for real-word and casing errors.
+    for (let run = 1; run <= runs; run++) {
+      const outcome = await runProofread(labeled.doc.text, { log: false, alreadyFlagged: codeFlags.map((f) => f.word) });
+      if (!outcome.ok) throw new Error(outcome.message);
+      const flags = outcome.findings.map((f) => ({ word: f.word, context: f.quote }));
+      // Code's flags plus the model's, scored together: what a user would see.
+      const r = summarize('hybrid', run, outcome.call.latencyMs + (codeLatency ?? 0), [...codeFlags, ...flags], labeled.items, outcome.findings.filter((f) => !f.evidenceFound).length);
+      results.push(r);
+      console.log(line(r));
+      if (values.show) for (const f of flags) console.log(`      model: "${f.word}" in "${f.context.replace(/\s+/g, ' ')}"`);
     }
   }
 
