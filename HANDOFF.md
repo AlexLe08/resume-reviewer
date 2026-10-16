@@ -13,7 +13,7 @@ Last updated 2026-10-14. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 ## Next: Phase 3, multiple reviewers
 
 - Recruiter stays; add a hiring manager (technical depth, relevance) and a proofreader (spelling, consistency, formatting).
-- **First decision:** is the proofreader a model at all? Test a code spell checker (plus a technology wordlist) against the model on `weak-duties` and the private resume. The spell checker's risk is false alarms on names like Puppeteer and Akamai.
+- **Decided (DECISIONS 7.1):** the proofreader is a model with the plain prompt (`src/lib/proofread/model.ts`); code spell checking added nothing. Still open: run it on the private resume (`npm run spike:proofread -- --fixture fixtures/private/proofread.labels.json`), then build the persona and the sequential streaming.
 - Reviewers run one after another locally (~80 s each): stream each reviewer's results as soon as they're ready, same pattern as job matching.
 - Eval impact: fixture expectations are written for one reviewer today; decide per-reviewer vs combined expectations before adding reviewers.
 

@@ -274,9 +274,35 @@ Median time per review: ~78–86 s
 
 ---
 
-## 7. Open items
+## 7. Phase 3: multiple reviewers
 
-- **Proofreader reviewer** (Phase 3): the typo gap (~37%). First test a code spell checker against the model.
+### 7.1 Is the proofreader a model? (`scripts/spikes/proofread.ts`)
+
+- **Question:** the recruiter caught typos ~37% of the time (5.6). Does a code spell checker (cspell with its software-terms and companies dictionaries, no project wordlist) do the proofreader's job, or is a model needed?
+- **Setup:** two synthetic fixtures with user-confirmed labels: `typos` (6 non-word, 5 real-word, 3 tech-casing errors, 10 correct-but-uncommon "trap" terms) and `typos2` (3, 8, 3, 10). Model: new dedicated prompt and schema, temperature 0 set explicitly (`callStructured` has no default, so Ollama would use the model's own 1.0), quotes grounded as in reviews. One run each, since temperature-0 runs repeat.
+- **Success bar (set before the second fixture):** model catches at least 4/8 real-word errors with at most 1 false alarm; otherwise a model proofreader isn't worth ~85 s.
+- **Results** (non-word / real-word / casing / traps flagged / other false alarms):
+
+| | `typos` | `typos2` |
+|---|---|---|
+| code | 6/6, 0/5, 1/3, 3/10, 5 | 2/3, 0/8, 0/3, 3/10, 0 |
+| model, plain prompt | 6/6, 2/5, 2/3, 0/10, 0 | 3/3, 7/8, 3/3, 0/10, 0 |
+| model told what code flagged, looking only for real-word and casing errors ("hybrid prompt") | 6/6, 2/5, 3/3, 3/10, 5 | 2/3, 5/8, 3/3, 3/10, 0 |
+
+  Latency: code ~1 s, model ~85-105 s. `typos2` was rerun on a clean commit (`be469b3`) with identical counts.
+- **Findings:**
+  - Code cannot see real-word errors (0/13) and caught 1/6 casing errors. Its trap flags are names and tools missing from the dictionaries (company names, Vite), so it would need a wordlist.
+  - The plain model had 0 false alarms in both fixtures (all 20 traps untouched, every quote grounded) and caught 9/9 non-words, 9/13 real-word and 5/6 casing errors.
+  - The hybrid prompt was no better than the plain model on either fixture and worse on `typos2` (told to leave non-words to code, it lost `plyer`, a word code's dictionary accepts, and two real-word errors).
+- **Decision:** the proofreader is a model with the plain prompt. Code spell checking is not added: it finds almost nothing the model misses and brings false alarms.
+- **Caveats:** real-word recall was 2/5 on one fixture and 7/8 on the other, so ~70% pooled is a rough figure. One run per fixture, synthetic text, one model. The real-resume check (labels in `fixtures/private/`) has not been run.
+- **Not decided:** whether `cspell-lib` stays as a dependency (it is a devDependency for the spike only).
+
+---
+
+## 8. Open items
+
+- **Proofreader reviewer** (Phase 3): a model with the plain prompt (7.1). Still to do: the persona, running reviewers one after another, and a check on a real resume.
 - **Links within one group** are not reliably judged (1 catch, 2 misses, 1 false alarm on a correct two-step inference). Covered by the interface line; one example each, so no fix yet (6.13).
 - **A revision can restate a flagged link** with a number, and the judge then passes it, because each round is judged without earlier flags (seen once, 6.13). If it repeats, carry relationship flags forward.
 - **Verdicts vary between runs** of the same input: lower temperature, majority vote, or showing borderline verdicts.
