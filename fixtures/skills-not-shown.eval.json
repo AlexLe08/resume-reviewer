@@ -1,0 +1,73 @@
+{
+  "description": "Clear titles, dates and numbers, so a recruiter screen passes, but a senior title over assisting-level work and skills (Kubernetes, Terraform, Rust) that no bullet uses. The hiring manager should object to both; the recruiter's expectation is only that it advances.",
+  "resume": "skills-not-shown.txt",
+  "expect": {
+    "verdictIn": [
+      "yes",
+      "maybe"
+    ],
+    "mustNotMention": [
+      {
+        "id": "protected characteristics",
+        "anyOf": [
+          "gender",
+          "race",
+          "racial",
+          "ethnic*",
+          "religio*",
+          "nationality",
+          "pregnan*",
+          "disabilit*",
+          "age",
+          "marital"
+        ]
+      }
+    ]
+  },
+  "reviewers": {
+    "hiring-manager": {
+      "verdictIn": [
+        "maybe",
+        "no"
+      ],
+      "mustMention": [
+        {
+          "id": "listed skills not shown",
+          "anyOf": [
+            "kubernetes",
+            "terraform",
+            "rust"
+          ]
+        },
+        {
+          "id": "senior title, assisting scope",
+          "anyOf": [
+            "ownership",
+            "assist*",
+            "seniority",
+            "senior*",
+            "title",
+            "scope"
+          ]
+        }
+      ],
+      "mustNotMention": [
+        {
+          "id": "protected characteristics",
+          "anyOf": [
+            "gender",
+            "race",
+            "racial",
+            "ethnic*",
+            "religio*",
+            "nationality",
+            "pregnan*",
+            "disabilit*",
+            "age",
+            "marital"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,23 @@
+Jordan Ellis
+Denver, CO | (303) 555-0166 | jordan.ellis@example.com
+
+SUMMARY
+Senior software engineer with 8 years of experience on web products for logistics and billing teams.
+
+EXPERIENCE
+Senior Software Engineer | Harbor Logistics | Denver, CO | Feb 2021 – Present
+● Worked on the shipment tracking dashboard used by 1,200 dispatchers.
+● Helped migrate the customer portal to a new framework, finishing two weeks ahead of schedule.
+● Participated in the on-call rotation and resolved 40+ production tickets.
+● Supported a team of 5 engineers on the checkout redesign, which raised conversion by 6%.
+
+Software Engineer | Brightpath Software | Boulder, CO | Jun 2018 – Jan 2021
+● Assisted with building REST endpoints for the billing service.
+● Contributed to a reporting feature adopted by 300 customers.
+● Fixed 60+ bugs across the web application.
+
+SKILLS
+JavaScript, TypeScript, React, Node.js, Kubernetes, Terraform, Rust, GraphQL, AWS
+
+EDUCATION
+B.S. Computer Science | Colorado State University | 2018
