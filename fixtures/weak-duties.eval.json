@@ -1,5 +1,5 @@
 {
-  "description": "Duty lists with no outcomes, a vague objective, and a typo. A reviewer should not advance it and must ask for measurable results.",
+  "description": "Duty lists with no outcomes and a vague objective. A reviewer should not advance it and must ask for measurable results. (Its typo is scored by the proofreader, weak-duties.labels.json.)",
   "resume": "weak-duties.txt",
   "expect": {
     "verdictIn": [
@@ -19,16 +19,6 @@
           "numbers",
           "achievement*",
           "accomplishment*"
-        ]
-      },
-      {
-        "id": "typo",
-        "anyOf": [
-          "typo*",
-          "spelling",
-          "misspel*",
-          "developped",
-          "proofread*"
         ]
       }
     ],

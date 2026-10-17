@@ -298,11 +298,23 @@ Median time per review: ~78–86 s
 - **Caveats:** real-word recall was 2/5 on one fixture and 7/8 on the other, so ~70% pooled is a rough figure. One run per fixture, synthetic text, one model. The real-resume check (labels in `fixtures/private/`) has not been run.
 - **Not decided:** whether `cspell-lib` stays as a dependency (it is a devDependency for the spike only).
 
+### 7.2 Three reviewers in one stream, per-reviewer expectations
+
+- **Structure:** one `/api/review` request runs the recruiter, the hiring manager and the proofreader one after another (the local model handles one request at a time) and streams each result as it finishes, as job matching does. The browser shows one tab per reviewer with a status mark, so a finished review is readable while the rest run. One reviewer failing is reported on its own tab and the others still run. Total time is about 4-5 minutes locally.
+- **The proofreader is not a persona.** Personas are data fed to the shared review pipeline and return a verdict, strengths and ranked issues. A proofreader returns a flat list of corrections, so forcing it into that shape would add a fake verdict. It has its own pipeline, event (`proofread_done`) and panel behind the same `Reviewer` list.
+- **The hiring manager is a persona** (technical depth, relevance to the role the resume itself targets, skills backed by work, scope, growth). Posting fit stays in the Match tab, so it has no posting input.
+- **Per-reviewer expectations:** a fixture's `expect` is the recruiter's, and an optional `reviewers: { "<persona id>": {...} }` map holds the others. A reviewer is scored only on fixtures that list it. Rejected: one combined expectation per fixture, because a miss could not be attributed to a reviewer (4.4, rule 2). The proofreader is scored on `*.labels.json` files (7.1).
+- **Hiring-manager baseline** (`6094ce0`, 4 fixtures x 3 runs, bar set beforehand): **39/39 checks**, 74/74 quotes found, 12/12 valid runs. "No technical depth" on `weak-duties` was found in the first issue at high severity in 3/3 runs. Caveat: this is a ceiling result on keyword checks that are partly copied from the recruiter's, so it shows the expected topics come up, not how the hiring manager differs from the recruiter. The hiring manager gives `buzzword-summary` "yes" 3/3, which the user confirmed is the right verdict (solid experience undercut by its summary), so no verdict rule is needed there.
+- **Recruiter prompt: "typos" removed from its focus** (one word, shared prompt, `6935805`). Recruiter eval on the five public fixtures, 3 runs each: baseline (`6094ce0`) 49/51 checks, 90/90 quotes; after the change 49/51 checks, 92/94 quotes. Every check other than the `weak-duties` typo was 3/3 in both, and the typo check was 1/3 in both: **the change is behavior-neutral**, and the recruiter still mentions the typo at the same rate without being asked. One `recent-gap` run had 2 ungrounded quotes (baseline 0); one run in fifteen, treated as noise, to recheck if it recurs.
+- **Expectation move (rule 10):** the rule is "typos belong to the proofreader once the recruiter prompt drops them". Applied to the one recruiter typo expectation (`weak-duties`) and verified with `--rescore` on both runs: each went from 49/51 to 48/48, the three removed checks being exactly the typo check (1 pass, 2 fails), with no other result changing.
+- **Not covered:** the private resume was not part of the baseline or the after-run (its fixture's PDF is missing), so it has no before/after.
+
 ---
 
 ## 8. Open items
 
-- **Proofreader reviewer** (Phase 3): a model with the plain prompt (7.1). Still to do: the persona, running reviewers one after another, and a check on a real resume.
+- **Proofreader on a real resume** (Phase 3): the model proofreader is built and in the app (7.1, 7.2) but only measured on synthetic fixtures (real-word recall 2/5 and 7/8). The check on a real resume is still to do.
+- **Hiring manager vs recruiter:** the 39/39 baseline doesn't show how they differ (7.2). Needs a fixture where only the hiring manager should object (skills listed but never used in the work).
 - **Links within one group** are not reliably judged (1 catch, 2 misses, 1 false alarm on a correct two-step inference). Covered by the interface line; one example each, so no fix yet (6.13).
 - **A revision can restate a flagged link** with a number, and the judge then passes it, because each round is judged without earlier flags (seen once, 6.13). If it repeats, carry relationship flags forward.
 - **Verdicts vary between runs** of the same input: lower temperature, majority vote, or showing borderline verdicts.
