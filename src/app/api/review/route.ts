@@ -15,7 +15,7 @@ export const maxDuration = 60;
  *
  * Validation failures return a normal JSON error with a 4xx/5xx status.
  * Once the input is valid, we switch to a streamed NDJSON response:
- * extracted → review_started → review_delta* → review_done (or error).
+ * extracted → review_started → review_delta* → review_done | reviewer_error → done (or error).
  */
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -37,7 +37,13 @@ export async function POST(request: Request): Promise<Response> {
   const signal = request.signal;
 
   return ndjsonResponse<StreamEvent>(async (send) => {
-    send({ type: 'extracted', pageCount: doc.pageCount, text: doc.text, checks });
+    send({
+      type: 'extracted',
+      pageCount: doc.pageCount,
+      text: doc.text,
+      checks,
+      reviewers: [{ id: persona.id, name: persona.name, kind: 'review' }],
+    });
 
     if (!hasUsableText(doc)) {
       send({
@@ -50,22 +56,24 @@ export async function POST(request: Request): Promise<Response> {
       return;
     }
 
-    send({ type: 'review_started', personaId: persona.id, personaName: persona.name });
+    send({ type: 'review_started', reviewerId: persona.id });
     const outcome = await runReview(doc, persona, {
       signal,
-      onDelta: (text) => send({ type: 'review_delta', text }),
+      onDelta: (text) => send({ type: 'review_delta', reviewerId: persona.id, text }),
     });
 
     if (outcome.ok) {
-      send({ type: 'review_done', personaId: persona.id, review: outcome.review, call: outcome.call });
+      send({ type: 'review_done', reviewerId: persona.id, review: outcome.review, call: outcome.call });
+    } else if (outcome.kind === 'aborted') {
       return;
+    } else {
+      send({
+        type: 'reviewer_error',
+        reviewerId: persona.id,
+        message: outcome.message,
+        retryable: outcome.kind === 'llm_error' ? outcome.retryable : true,
+      });
     }
-    if (outcome.kind === 'aborted') return;
-    send({
-      type: 'error',
-      stage: 'review',
-      message: outcome.message,
-      retryable: outcome.kind === 'llm_error' ? outcome.retryable : true,
-    });
+    send({ type: 'done' });
   });
 }

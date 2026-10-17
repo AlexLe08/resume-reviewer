@@ -120,7 +120,7 @@ export function ReviewWorkspace() {
               <ParsedTextPanel text={review.state.extracted.text} pageCount={review.state.extracted.pageCount} />
             </section>
             <section className="column" aria-labelledby="review-heading">
-              <ReviewPanel state={review.state} />
+              {review.state.reviewers[0] && <ReviewPanel reviewer={review.state.reviewers[0]} />}
             </section>
           </div>
         )}

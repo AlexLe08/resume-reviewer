@@ -1,4 +1,4 @@
-import type { ReviewState } from '@/hooks/useReviewStream';
+import type { ReviewerState } from '@/hooks/useReviewStream';
 import type { GroundedReview } from '@/lib/review/grounding';
 import type { Review } from '@/lib/review/schema';
 import { Evidence } from './Evidence';
@@ -15,60 +15,66 @@ const SEVERITY_ORDER: Record<Review['issues'][number]['severity'], number> = {
   low: 2,
 };
 
-export function ReviewPanel({ state }: { state: ReviewState }) {
-  const name = state.persona?.name ?? 'Recruiter';
+export function ReviewPanel({ reviewer }: { reviewer: ReviewerState }) {
+  const { review, call } = reviewer;
 
   return (
     <div className="review">
-      <h2 id="review-heading">{name}&apos;s read</h2>
+      <h2 id="review-heading">{reviewer.name}&apos;s read</h2>
 
-      {state.status === 'reviewing' && (
+      {reviewer.status === 'waiting' && (
+        <p className="pending" aria-live="polite">
+          Waiting for the earlier reviewers to finish
+        </p>
+      )}
+
+      {reviewer.status === 'running' && (
         <p className="pending" aria-live="polite">
           <span className="pending-dot" aria-hidden="true" />
           Reading your resume
-          {state.liveChars > 0 && ` (${state.liveChars.toLocaleString()} characters written)`}
+          {reviewer.liveChars > 0 && ` (${reviewer.liveChars.toLocaleString()} characters written)`}
         </p>
       )}
 
-      {state.status === 'error' && !state.review && (
+      {reviewer.status === 'error' && !review && (
         <p role="alert" className="error-banner">
-          {state.error}
+          {reviewer.error}
         </p>
       )}
 
-      {state.review && <ReviewBody review={state.review} />}
+      {review && <ReviewBody review={review} />}
 
-      {state.call && (
+      {call && (
         <dl className="usage">
           <div>
             <dt>Model</dt>
             <dd>
-              {state.call.provider} / {state.call.model}
+              {call.provider} / {call.model}
             </dd>
           </div>
           <div>
             <dt>Tokens in / out / thinking</dt>
             <dd>
-              {state.call.inputTokens.toLocaleString()} / {state.call.outputTokens.toLocaleString()} /{' '}
-              {state.call.thinkingTokens.toLocaleString()}
+              {call.inputTokens.toLocaleString()} / {call.outputTokens.toLocaleString()} /{' '}
+              {call.thinkingTokens.toLocaleString()}
             </dd>
           </div>
           <div>
             <dt>Time</dt>
-            <dd>{(state.call.latencyMs / 1000).toFixed(1)} s</dd>
+            <dd>{(call.latencyMs / 1000).toFixed(1)} s</dd>
           </div>
-          {state.review && state.review.grounding.quotes > 0 && (
+          {review && review.grounding.quotes > 0 && (
             <div>
               <dt>Quotes found in resume</dt>
               <dd>
-                {state.review.grounding.found} of {state.review.grounding.quotes}
+                {review.grounding.found} of {review.grounding.quotes}
               </dd>
             </div>
           )}
-          {state.call.estimatedCostUsd > 0 && (
+          {call.estimatedCostUsd > 0 && (
             <div>
               <dt>Estimated cost</dt>
-              <dd>${state.call.estimatedCostUsd.toFixed(4)}</dd>
+              <dd>${call.estimatedCostUsd.toFixed(4)}</dd>
             </div>
           )}
         </dl>
