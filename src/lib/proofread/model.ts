@@ -67,10 +67,10 @@ export function buildProofreadPrompt(resumeText: string, options: ProofreadPromp
 
 export type ProofreadOutcome =
   | { ok: true; findings: ProofreadFinding[]; call: CallRecord }
-  | { ok: false; message: string };
+  | { ok: false; kind: 'aborted' | 'error'; message: string; retryable: boolean };
 
 /** Same grounding as reviews: a finding whose quote isn't in the resume is marked, not trusted. */
-export async function runProofread(resumeText: string, options: ProofreadPromptOptions & { log?: boolean; signal?: AbortSignal } = {}): Promise<ProofreadOutcome> {
+export async function runProofread(resumeText: string, options: ProofreadPromptOptions & { log?: boolean; signal?: AbortSignal; onDelta?: (text: string) => void } = {}): Promise<ProofreadOutcome> {
   const { system, user } = buildProofreadPrompt(resumeText, options);
   const outcome = await callStructured({
     task: 'proofread',
@@ -80,10 +80,14 @@ export async function runProofread(resumeText: string, options: ProofreadPromptO
     // Explicit: with none, Ollama uses the model's own default (1.0 for Gemma).
     temperature: 0,
     signal: options.signal,
+    onDelta: options.onDelta,
     log: options.log ?? true,
     mockResponse: () => ({ findings: [] }),
   });
-  if (!outcome.ok) return { ok: false, message: 'message' in outcome ? outcome.message : 'The call was aborted.' };
+  if (!outcome.ok) {
+    if (outcome.kind === 'aborted') return { ok: false, kind: 'aborted', message: 'The call was aborted.', retryable: false };
+    return { ok: false, kind: 'error', message: outcome.message, retryable: outcome.kind === 'llm_error' ? outcome.retryable : true };
+  }
 
   const findings = outcome.data.findings.map((f) => ({
     ...f,

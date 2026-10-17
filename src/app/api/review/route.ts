@@ -2,8 +2,7 @@ import { hasUsableText, runChecks } from '@/lib/checks';
 import { getEnv } from '@/lib/env';
 import { extractResume, jsonError, readForm, readResumeFile } from '@/lib/http/upload';
 import { ndjsonResponse } from '@/lib/http/ndjson-response';
-import { PERSONAS } from '@/lib/review/personas';
-import { runReview } from '@/lib/review/run';
+import { REVIEWERS, reviewerInfo, runReviewers } from '@/lib/review/reviewers';
 import type { StreamEvent } from '@/lib/stream/events';
 
 // pdf.js needs Node APIs, so this route can't run on the edge runtime.
@@ -15,7 +14,8 @@ export const maxDuration = 60;
  *
  * Validation failures return a normal JSON error with a 4xx/5xx status.
  * Once the input is valid, we switch to a streamed NDJSON response:
- * extracted → review_started → review_delta* → review_done | reviewer_error → done (or error).
+ * extracted → per reviewer, one after another: review_started → review_delta* →
+ * review_done | proofread_done | reviewer_error → done (or a fatal error).
  */
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -33,7 +33,6 @@ export async function POST(request: Request): Promise<Response> {
   if (doc instanceof Response) return doc;
 
   const checks = runChecks(doc);
-  const persona = PERSONAS.recruiter;
   const signal = request.signal;
 
   return ndjsonResponse<StreamEvent>(async (send) => {
@@ -42,7 +41,7 @@ export async function POST(request: Request): Promise<Response> {
       pageCount: doc.pageCount,
       text: doc.text,
       checks,
-      reviewers: [{ id: persona.id, name: persona.name, kind: 'review' }],
+      reviewers: reviewerInfo(REVIEWERS),
     });
 
     if (!hasUsableText(doc)) {
@@ -56,24 +55,6 @@ export async function POST(request: Request): Promise<Response> {
       return;
     }
 
-    send({ type: 'review_started', reviewerId: persona.id });
-    const outcome = await runReview(doc, persona, {
-      signal,
-      onDelta: (text) => send({ type: 'review_delta', reviewerId: persona.id, text }),
-    });
-
-    if (outcome.ok) {
-      send({ type: 'review_done', reviewerId: persona.id, review: outcome.review, call: outcome.call });
-    } else if (outcome.kind === 'aborted') {
-      return;
-    } else {
-      send({
-        type: 'reviewer_error',
-        reviewerId: persona.id,
-        message: outcome.message,
-        retryable: outcome.kind === 'llm_error' ? outcome.retryable : true,
-      });
-    }
-    send({ type: 'done' });
+    await runReviewers(doc, REVIEWERS, send, signal);
   });
 }
