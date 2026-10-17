@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useState } from 'react';
 import { useBulletStream } from '@/hooks/useBulletStream';
 import { useMatchStream } from '@/hooks/useMatchStream';
 import { useReviewStream } from '@/hooks/useReviewStream';
@@ -12,6 +12,7 @@ import { FilePicker } from './FilePicker';
 import { MatchPanel } from './MatchPanel';
 import { ParsedTextPanel } from './ParsedTextPanel';
 import { ReviewPanel } from './ReviewPanel';
+import { Tabs } from './Tabs';
 
 type Mode = 'review' | 'match';
 
@@ -30,7 +31,6 @@ const MODES: { id: Mode; label: string }[] = [
 export function ReviewWorkspace() {
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<Mode>('review');
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const review = useReviewStream();
   const match = useMatchStream();
@@ -59,14 +59,6 @@ export function ReviewWorkspace() {
     setStyle,
   };
 
-  // Arrow keys move between tabs, as screen-reader users expect from a tab list.
-  function handleTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-    const next = (index + (event.key === 'ArrowRight' ? 1 : MODES.length - 1)) % MODES.length;
-    setMode(MODES[next]!.id);
-    tabRefs.current[next]?.focus();
-  }
-
   return (
     <main className="workspace">
       <header className="masthead">
@@ -79,27 +71,7 @@ export function ReviewWorkspace() {
 
       <FilePicker file={file} onChange={setFile} disabled={reviewBusy || matchBusy} />
 
-      <div role="tablist" aria-label="What to do with your resume" className="modes">
-        {MODES.map((m, i) => (
-          <button
-            key={m.id}
-            ref={(el) => {
-              tabRefs.current[i] = el;
-            }}
-            type="button"
-            role="tab"
-            id={`tab-${m.id}`}
-            aria-selected={mode === m.id}
-            aria-controls={`panel-${m.id}`}
-            tabIndex={mode === m.id ? 0 : -1}
-            className="mode-tab"
-            onClick={() => setMode(m.id)}
-            onKeyDown={(event) => handleTabKey(event, i)}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+      <Tabs label="What to do with your resume" tabs={MODES} selected={mode} onSelect={setMode} />
 
       {/* Both panels stay mounted so switching tabs never loses a result. */}
       <section role="tabpanel" id="panel-review" aria-labelledby="tab-review" hidden={mode !== 'review'}>
