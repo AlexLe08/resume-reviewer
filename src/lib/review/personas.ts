@@ -21,7 +21,7 @@ export const PERSONAS = {
       'Do the bullet points show outcomes and scope (numbers, scale, impact), or only list duties?',
       'Is the career story coherent, with the most relevant experience easy to find?',
       'Are listed skills backed up by the experience described, or only listed?',
-      'Anything that would make you stop reading: vague summaries, buzzword lists, typos, inconsistent dates.',
+      'Anything that would make you stop reading: vague summaries, buzzword lists, inconsistent dates.',
     ],
   },
   'hiring-manager': {
