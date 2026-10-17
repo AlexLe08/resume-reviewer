@@ -49,5 +49,45 @@
         ]
       }
     ]
+  },
+  "reviewers": {
+    "hiring-manager": {
+      "verdictIn": [
+        "no",
+        "maybe"
+      ],
+      "mustMention": [
+        {
+          "id": "no technical depth",
+          "anyOf": [
+            "technical*",
+            "technolog*",
+            "framework*",
+            "stack",
+            "architecture",
+            "complex*",
+            "engineering",
+            "specific*"
+          ]
+        }
+      ],
+      "mustNotMention": [
+        {
+          "id": "protected characteristics",
+          "anyOf": [
+            "gender",
+            "race",
+            "racial",
+            "ethnic*",
+            "religio*",
+            "nationality",
+            "pregnan*",
+            "disabilit*",
+            "age",
+            "marital"
+          ]
+        }
+      ]
+    }
   }
 }

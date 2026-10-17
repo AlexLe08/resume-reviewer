@@ -3,7 +3,7 @@ import type { ExtractedDocument } from '@/lib/pdf/extract';
 import { runProofread, type ProofreadFinding } from '@/lib/proofread/model';
 import type { ReviewerInfo, StreamEvent } from '@/lib/stream/events';
 import type { GroundedReview } from './grounding';
-import { PERSONAS } from './personas';
+import { PERSONAS, type Persona } from './personas';
 import { runReview } from './run';
 
 export type ReviewerResult =
@@ -21,18 +21,23 @@ export interface Reviewer extends ReviewerInfo {
  * data plus the shared review pipeline; the proofreader has its own pipeline
  * because it returns corrections, not a verdict.
  */
-export const REVIEWERS: readonly Reviewer[] = [
-  {
-    id: PERSONAS.recruiter.id,
-    name: PERSONAS.recruiter.name,
+function personaReviewer(persona: Persona): Reviewer {
+  return {
+    id: persona.id,
+    name: persona.name,
     kind: 'review',
     async run(doc, options) {
-      const outcome = await runReview(doc, PERSONAS.recruiter, options);
+      const outcome = await runReview(doc, persona, options);
       if (outcome.ok) return { ok: true, kind: 'review', review: outcome.review, call: outcome.call };
       if (outcome.kind === 'aborted') return outcome;
       return { ok: false, kind: 'error', message: outcome.message, retryable: outcome.kind === 'llm_error' ? outcome.retryable : true };
     },
-  },
+  };
+}
+
+export const REVIEWERS: readonly Reviewer[] = [
+  personaReviewer(PERSONAS.recruiter),
+  personaReviewer(PERSONAS['hiring-manager']),
   {
     id: 'proofreader',
     name: 'Proofreader',

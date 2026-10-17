@@ -39,7 +39,14 @@ export const FixtureFileSchema = z.object({
   description: z.string().min(1),
   /** Path to the resume (.txt or .pdf), relative to this fixture file. */
   resume: z.string().min(1),
+  /** The recruiter's expectations. */
   expect: ExpectationsSchema,
+  /**
+   * Expectations for other reviewers, by persona id. A reviewer without an
+   * entry isn't evaluated on this fixture. Typos are not here: the proofreader
+   * is scored on *.labels.json files.
+   */
+  reviewers: z.record(z.string(), ExpectationsSchema).default({}),
 });
 
 export interface Fixture {
@@ -47,6 +54,13 @@ export interface Fixture {
   description: string;
   resumePath: string;
   expect: Expectations;
+  /** See FixtureFileSchema. */
+  reviewers: Record<string, Expectations>;
+}
+
+/** What a persona is scored against on this fixture, or undefined if it isn't evaluated here. */
+export function expectationsFor(fixture: Fixture, personaId: string): Expectations | undefined {
+  return personaId === 'recruiter' ? fixture.expect : fixture.reviewers[personaId];
 }
 
 const SUFFIX = '.eval.json';
@@ -80,6 +94,7 @@ export async function findFixtures(sources: { dir: string; prefix: string }[]): 
         description: parsed.data.description,
         resumePath: path.resolve(dir, parsed.data.resume),
         expect: parsed.data.expect,
+        reviewers: parsed.data.reviewers,
       });
     }
   }
@@ -101,11 +116,17 @@ export async function loadResume(resumePath: string): Promise<ExtractedDocument>
  */
 export function validateFixture(fixture: Fixture, doc: ExtractedDocument): string[] {
   const text = normalizeForMatch(doc.text);
-  return fixture.expect.strengthEvidenceNotIn
-    .filter((rule) => !text.includes(normalizeForMatch(rule.text)))
-    .map(
-      (rule) =>
-        `${fixture.name}: the "${rule.id}" passage isn't in the resume text. ` +
-        `Copy it from "What a parser sees" in the app, not from the original document.`,
-    );
+  const sets = [
+    { who: fixture.name, expect: fixture.expect },
+    ...Object.entries(fixture.reviewers).map(([id, expect]) => ({ who: `${fixture.name} (${id})`, expect })),
+  ];
+  return sets.flatMap(({ who, expect }) =>
+    expect.strengthEvidenceNotIn
+      .filter((rule) => !text.includes(normalizeForMatch(rule.text)))
+      .map(
+        (rule) =>
+          `${who}: the "${rule.id}" passage isn't in the resume text. ` +
+          `Copy it from "What a parser sees" in the app, not from the original document.`,
+      ),
+  );
 }

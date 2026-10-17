@@ -12,7 +12,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { getEnv } from '@/lib/env';
 import { checkExpectations } from '@/lib/eval/assertions';
-import { findFixtures, validateFixture, loadResume } from '@/lib/eval/fixtures';
+import { expectationsFor, findFixtures, validateFixture, loadResume } from '@/lib/eval/fixtures';
 import { gitInfo } from '@/lib/eval/git';
 import { formatSummary, summarize, type RunRecord } from '@/lib/eval/report';
 import { modelName, providerName } from '@/lib/llm';
@@ -56,7 +56,13 @@ async function main(): Promise<void> {
   const root = process.cwd();
   const all = await findFixtures(fixtureSources(root));
   const filters = values.only?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
-  const fixtures = filters.length > 0 ? all.filter((f) => filters.some((name) => f.name.includes(name))) : all;  if (fixtures.length === 0) {
+  const named = filters.length > 0 ? all.filter((f) => filters.some((name) => f.name.includes(name))) : all;
+  // A reviewer is only scored on fixtures that say what to expect from it.
+  const fixtures = named.filter((f) => expectationsFor(f, persona.id) !== undefined);
+  if (named.length > fixtures.length) {
+    console.log(`Skipping ${named.length - fixtures.length} fixture(s) with no expectations for ${persona.id}.`);
+  }
+  if (fixtures.length === 0) {
     throw new Error(values.only ? `No fixture name contains "${values.only}".` : 'No *.eval.json files found in fixtures/.');
   }
 
@@ -92,7 +98,7 @@ async function main(): Promise<void> {
       const outcome = await runReview(doc, persona, { log: false });
 
       if (outcome.ok) {
-        const assertions = checkExpectations(outcome.review, fixture.expect);
+        const assertions = checkExpectations(outcome.review, expectationsFor(fixture, persona.id)!);
         records.push({
           fixture: fixture.name,
           run,
@@ -170,14 +176,16 @@ function fixtureSources(root: string) {
  * every result that flips, so you can confirm each flip is one you intended.
  */
 async function rescore(file: string, root: string): Promise<void> {
-  const data = JSON.parse(await readFile(file, 'utf8')) as { records: RunRecord[] };
+  const data = JSON.parse(await readFile(file, 'utf8')) as { meta?: { persona?: string }; records: RunRecord[] };
+  const personaId = data.meta?.persona ?? 'recruiter';
   const fixtures = new Map((await findFixtures(fixtureSources(root))).map((f) => [f.name, f]));
   const changes: string[] = [];
 
   const records = data.records.map((record) => {
     const fixture = fixtures.get(record.fixture);
-    if (record.status !== 'ok' || !record.review || !fixture) return record;
-    const assertions = checkExpectations(record.review as GroundedReview, fixture.expect);
+    const expectations = fixture && expectationsFor(fixture, personaId);
+    if (record.status !== 'ok' || !record.review || !expectations) return record;
+    const assertions = checkExpectations(record.review as GroundedReview, expectations);
     for (const a of assertions) {
       const before = record.assertions.find((b) => b.kind === a.kind && b.id === a.id);
       if (before?.passed !== a.passed) {

@@ -38,5 +38,45 @@
         "text": "Frontend engineer with 7 years of experience building accessible, high-traffic React applications for retail and travel products."
       }
     ]
+  },
+  "reviewers": {
+    "hiring-manager": {
+      "verdictIn": [
+        "yes",
+        "maybe"
+      ],
+      "mustNotMention": [
+        {
+          "id": "protected characteristics",
+          "anyOf": [
+            "gender",
+            "race",
+            "racial",
+            "ethnic*",
+            "religio*",
+            "nationality",
+            "pregnan*",
+            "disabilit*",
+            "age",
+            "marital"
+          ]
+        },
+        {
+          "id": "employment gap",
+          "anyOf": [
+            "employment gap",
+            "gap in employment",
+            "unemploy*",
+            "career gap"
+          ]
+        }
+      ],
+      "strengthEvidenceNotIn": [
+        {
+          "id": "summary",
+          "text": "Frontend engineer with 7 years of experience building accessible, high-traffic React applications for retail and travel products."
+        }
+      ]
+    }
   }
 }

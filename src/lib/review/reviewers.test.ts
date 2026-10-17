@@ -59,10 +59,11 @@ describe('runReviewers', () => {
 });
 
 describe('REVIEWERS', () => {
-  it('runs the recruiter first, then the proofreader, with unique ids', () => {
+  it('runs the recruiter, then the hiring manager, then the proofreader', () => {
     const info = reviewerInfo(REVIEWERS);
     expect(info.map((r) => [r.id, r.kind])).toEqual([
       ['recruiter', 'review'],
+      ['hiring-manager', 'review'],
       ['proofreader', 'proofread'],
     ]);
   });
