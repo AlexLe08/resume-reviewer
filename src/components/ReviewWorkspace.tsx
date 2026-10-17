@@ -11,6 +11,7 @@ import { ChecksPanel } from './ChecksPanel';
 import { FilePicker } from './FilePicker';
 import { MatchPanel } from './MatchPanel';
 import { ParsedTextPanel } from './ParsedTextPanel';
+import { ProofreadPanel } from './ProofreadPanel';
 import { ReviewPanel } from './ReviewPanel';
 import { Tabs } from './Tabs';
 
@@ -33,6 +34,10 @@ export function ReviewWorkspace() {
   const [mode, setMode] = useState<Mode>('review');
 
   const review = useReviewStream();
+  // Which reviewer's tab is open; null means the first, so each new review starts on it.
+  const [reviewerTab, setReviewerTab] = useState<string | null>(null);
+  const reviewers = review.state.reviewers;
+  const openReviewer = reviewerTab !== null && reviewers.some((r) => r.id === reviewerTab) ? reviewerTab : reviewers[0]?.id;
   const match = useMatchStream();
   const bullets = useBulletStream();
   const [openBulletFor, setOpenBulletFor] = useState<number | null>(null);
@@ -85,7 +90,11 @@ export function ReviewWorkspace() {
               type="button"
               className="button"
               disabled={!file || busyElsewhere('review')}
-              onClick={() => file && review.start(file)}
+              onClick={() => {
+                if (!file) return;
+                setReviewerTab(null);
+                void review.start(file);
+              }}
             >
               Review resume
             </button>
@@ -119,8 +128,18 @@ export function ReviewWorkspace() {
               <ChecksPanel checks={review.state.extracted.checks} />
               <ParsedTextPanel text={review.state.extracted.text} pageCount={review.state.extracted.pageCount} />
             </section>
-            <section className="column" aria-labelledby="review-heading">
-              {review.state.reviewers[0] && <ReviewPanel reviewer={review.state.reviewers[0]} />}
+            <section className="column" aria-label="Reviews">
+              <Tabs
+                label="Reviewers"
+                tabs={reviewers.map((r) => ({ id: r.id, label: r.name, status: r.status }))}
+                selected={openReviewer ?? ''}
+                onSelect={setReviewerTab}
+              />
+              {reviewers.map((r) => (
+                <div key={r.id} role="tabpanel" id={`panel-${r.id}`} aria-labelledby={`tab-${r.id}`} hidden={r.id !== openReviewer}>
+                  {r.kind === 'proofread' ? <ProofreadPanel reviewer={r} /> : <ReviewPanel reviewer={r} />}
+                </div>
+              ))}
             </section>
           </div>
         )}

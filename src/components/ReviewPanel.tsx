@@ -2,6 +2,7 @@ import type { ReviewerState } from '@/hooks/useReviewStream';
 import type { GroundedReview } from '@/lib/review/grounding';
 import type { Review } from '@/lib/review/schema';
 import { Evidence } from './Evidence';
+import { UsageList } from './UsageList';
 
 const VERDICT_TEXT: Record<Review['wouldAdvance'], string> = {
   yes: 'Would move forward',
@@ -20,7 +21,7 @@ export function ReviewPanel({ reviewer }: { reviewer: ReviewerState }) {
 
   return (
     <div className="review">
-      <h2 id="review-heading">{reviewer.name}&apos;s read</h2>
+      <h2 id={`${reviewer.id}-heading`}>{reviewer.name}&apos;s read</h2>
 
       {reviewer.status === 'waiting' && (
         <p className="pending" aria-live="polite">
@@ -44,41 +45,7 @@ export function ReviewPanel({ reviewer }: { reviewer: ReviewerState }) {
 
       {review && <ReviewBody review={review} />}
 
-      {call && (
-        <dl className="usage">
-          <div>
-            <dt>Model</dt>
-            <dd>
-              {call.provider} / {call.model}
-            </dd>
-          </div>
-          <div>
-            <dt>Tokens in / out / thinking</dt>
-            <dd>
-              {call.inputTokens.toLocaleString()} / {call.outputTokens.toLocaleString()} /{' '}
-              {call.thinkingTokens.toLocaleString()}
-            </dd>
-          </div>
-          <div>
-            <dt>Time</dt>
-            <dd>{(call.latencyMs / 1000).toFixed(1)} s</dd>
-          </div>
-          {review && review.grounding.quotes > 0 && (
-            <div>
-              <dt>Quotes found in resume</dt>
-              <dd>
-                {review.grounding.found} of {review.grounding.quotes}
-              </dd>
-            </div>
-          )}
-          {call.estimatedCostUsd > 0 && (
-            <div>
-              <dt>Estimated cost</dt>
-              <dd>${call.estimatedCostUsd.toFixed(4)}</dd>
-            </div>
-          )}
-        </dl>
-      )}
+      {call && <UsageList call={call} quotes={review?.grounding} />}
     </div>
   );
 }

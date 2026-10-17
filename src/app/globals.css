@@ -759,3 +759,23 @@ p {
   margin: var(--space-1) 0;
   padding-left: var(--space-4);
 }
+
+/* A mark on a tab for work that finishes later (one per reviewer) */
+
+.tab-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1em;
+  margin-left: var(--space-2);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.tab-status-done {
+  color: var(--ok);
+}
+
+.tab-status-error {
+  color: var(--red-pen);
+}

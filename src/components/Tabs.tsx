@@ -3,10 +3,21 @@
 import { useRef, type KeyboardEvent } from 'react';
 import { nextTabIndex } from './tab-keys';
 
+export type TabStatus = 'waiting' | 'running' | 'done' | 'error';
+
 export interface TabItem<Id extends string> {
   id: Id;
   label: string;
+  /** Work behind the tab, for tabs whose content arrives over time. Shown as a mark and spoken to screen readers. */
+  status?: TabStatus;
 }
+
+const STATUS_TEXT: Record<TabStatus, string> = {
+  waiting: 'waiting',
+  running: 'in progress',
+  done: 'ready',
+  error: 'failed',
+};
 
 interface TabsProps<Id extends string> {
   /** Names the tab list for screen readers. */
@@ -49,6 +60,14 @@ export function Tabs<Id extends string>({ label, tabs, selected, onSelect }: Tab
           onKeyDown={(event) => handleKey(event, i)}
         >
           {tab.label}
+          {tab.status && (
+            <>
+              <span className={`tab-status tab-status-${tab.status}`} aria-hidden="true">
+                {tab.status === 'running' ? <span className="pending-dot" /> : tab.status === 'done' ? '✓' : tab.status === 'error' ? '!' : ''}
+              </span>
+              <span className="visually-hidden"> ({STATUS_TEXT[tab.status]})</span>
+            </>
+          )}
         </button>
       ))}
     </div>
