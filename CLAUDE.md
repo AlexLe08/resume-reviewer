@@ -14,11 +14,13 @@ Resume Reviewer: a Next.js + TypeScript app that shows what a parser extracts fr
 | `npm test` / `npm run typecheck`                                             | Vitest / `tsc --noEmit`. Both must pass before a commit                                                                |
 | `npx vitest run src/lib/bullets/checks.test.ts` / `npx vitest run -t "name"` | One test file / tests matching a name. Tests are colocated as `src/**/*.test.ts`, node environment, `@` aliases `src/` |
 | `npm run build`                                                              | Next production build (there is no lint script)                                                                        |
-| `npm run eval`                                                               | Review evals: fixtures × runs, results in `eval-results/` with the git commit                                          |
+| `npm run eval` / `npm run eval -- --persona hiring-manager`                  | Review evals for the recruiter / another persona (only fixtures that list it); results in `eval-results/` with the git commit |
 | `npm run eval -- --rescore <file>`                                           | Re-apply current expectations to saved results, no model calls                                                         |
 | `npm run eval:jobs -- --stage extract\|match\|both`                          | Job-matching evals; also `--only`, `--runs`, `--rescore`                                                               |
 | `npm run match -- --resume <pdf> --job <txt>`                                | One job match in the terminal                                                                                          |
 | `npm run spike:bullets` / `npm run spike:judge` / `npm run spike:tools`      | Bullet-loop, judge and tool-use spikes                                                                                 |
+| `npm run spike:proofread -- --fixture <labels> --only code\|model\|hybrid --show` | Proofreader scored on a `*.labels.json` file; `--show` prints flags (may contain resume text)                  |
+| `npm run anonymize` / `npm run anonymize -- --write`                         | Replace names in `fixtures/private/` and listed tracked files from `fixtures/private/anonymize.map.json`; dry run by default, prints counts only |
 | `LLM_PROVIDER=mock npm run …`                                                | Instant, no model: for UI work and checking plumbing                                                                   |
 
 Long runs: prefix with `caffeinate -i` (a sleeping Mac stalled a run for 19 minutes). Evals and spikes take 10–40 minutes on the local model: **ask before starting one**.
@@ -34,7 +36,8 @@ Long runs: prefix with `caffeinate -i` (a sleeping Mac stalled a run for 19 minu
 ```
 src/lib/llm/          provider boundary (ollama, gemini, mock), retry, usage; callStructured() = every model call
 src/lib/checks/       deterministic resume checks, timeline (dates computed in code)
-src/lib/review/       recruiter review: prompt, schema, grounding (quote checking), runReview()
+src/lib/review/       personas (recruiter, hiring manager), prompt, schema, grounding (quote checking), runReview(); reviewers.ts = the ordered Reviewer list and runReviewers()
+src/lib/proofread/    proofreader: model call (model.ts), labels format + validation, scoring; code.ts is the cspell checker used by the spike only
 src/lib/jobs/         requirement extraction + matching (a workflow, not an agent: see DECISIONS §6.2)
 src/lib/bullets/      evaluator–optimizer loop: checks.ts (code checks), loop.ts (draft → check → judge → revise)
 src/lib/pdf/          PDF text extraction (unpdf)
@@ -45,7 +48,7 @@ src/app/api/          review, match, bullets routes (all stream NDJSON)
 src/hooks/            useNdjsonRequest + one hook per stream; reducers are pure and tested
 src/components/       ReviewWorkspace (tabs), MatchPanel/MatchResults, BulletWriter
 scripts/              eval runners, match CLI, spikes/
-fixtures/             public fixtures; fixtures/private/ is gitignored (real resume, postings, notes)
+fixtures/             public fixtures (*.eval.json for reviews, *.labels.json for the proofreader); fixtures/private/ is gitignored
 ```
 
 ## Principles (each came from a measured failure; see DECISIONS.md)
@@ -72,8 +75,8 @@ fixtures/             public fixtures; fixtures/private/ is gitignored (real res
 
 ## Privacy and constraints
 
-- `.claude/settings.json` denies Read on `fixtures/private/`, `eval-results/` and `.env*`. Don't ask the user to paste content from them: work from public fixtures, or ask the user to add a synthetic fixture that reproduces the issue. Ask before running a script on private fixtures, since its output may contain resume text.
-- Never commit or print resume content, notes, postings, or `eval-results/`. `DECISIONS.md` must contain no personal details.
+- `.claude/settings.json` denies Read on `eval-results/` and `.env*`, and allows Read/Edit on `fixtures/private/` (the user opened it on 2026-10-17 to anonymize company names). **Evaluation uses synthetic public fixtures only** (user decision): don't run evals or spikes on private fixtures, and open them only when the user asks. If a problem needs a real-world case, ask for a synthetic fixture that reproduces it.
+- Never commit or print resume content, notes, postings, or `eval-results/`. `DECISIONS.md` and `HANDOFF.md` must contain no personal details or real company names (use placeholders such as `CompanyA`; test fixtures too). Git history before 2026-10-18 still has some; accepted.
 - Notes are used per request and never stored. Only writing-style settings persist (browser `localStorage`).
 - No-spend: development must cost nothing.
 
@@ -82,5 +85,7 @@ fixtures/             public fixtures; fixtures/private/ is gitignored (real res
 - The user is a mid-level frontend developer learning LLM/agent engineering. Explain the options and tradeoffs before larger changes, and say why the chosen one wins.
 - The user reviews every diff. Stage by name, check `git diff --staged`, then commit. Don't use `git commit -am`.
 - Don't edit files in `fixtures/private/` without asking: they are the user's ground truth.
+- A new reviewer = a `Reviewer` entry in `src/lib/review/reviewers.ts` (a persona in `personas.ts` if it returns a verdict, its own pipeline and event if not) plus fixtures that list it under `reviewers` in `*.eval.json`.
+- `AGENTS.md` is written by `next dev`; commit it with the work rather than leaving it as noise.
 - The user is the ground truth for labels and for whether a bullet is accurate.
 - TypeScript strict (`noUncheckedIndexedAccess`, `allowUnreachableCode: false`). Comments explain why, not what. User-facing copy is plain language.
