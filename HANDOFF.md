@@ -13,11 +13,10 @@ Last updated 2026-10-17. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 
 ## Next
 
-- **Private resume checks (need the user):** `fixtures/private/my-resume.pdf` is missing, so `npm run eval` fails on the private fixture unless you pass `--only` with the public names. Restore or remove it, then re-run the recruiter eval to get its before/after. Also run the proofreader on it: `npm run spike:proofread -- --fixture fixtures/private/proofread.labels.json`.
+- **Evaluation uses synthetic fixtures only** (decision, 2026-10-17): no real resume is used for evals or the proofreader check. `npm run eval` still tries any fixture in `fixtures/private/`, and one points at a PDF that is missing, so run it with `--only` and the public fixture names, or remove that fixture.
 - **More fixtures where the hiring manager and recruiter should differ.** `skills-not-shown` split them on verdict (hiring manager "maybe" 3/3, recruiter "yes" 3/3), but it is one fixture. Labels for new fixtures are the user's call.
 - **Proofreader in the eval harness:** it is scored by `spike:proofread` on `*.labels.json` only, not by `npm run eval`. Decide whether it should be a regular eval or stay a spike.
 - **Hosting (Phase 5):** a full review is ~4-5 min locally; the route's `maxDuration = 60` would cut it short on a host.
-- UI is untested in a browser (no component tests): check the reviewer tabs with `LLM_PROVIDER=mock npm run dev`.
 
 ## Open items
 
@@ -31,7 +30,7 @@ Last updated 2026-10-17. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 
 ## Resume work (the actual goal)
 
-- Project bullets drafted with the bullet writer; Lenovo #13 candidates usable. Re-run Chewy #19 with a note, in your own words, about building this with an AI assistant.
+- Project bullets drafted with the bullet writer; CompanyC #13 candidates usable. Re-run CompanyA #19 with a note, in your own words, about building this with an AI assistant.
 - Before linking the repo publicly, check nothing private is in git history (should print nothing):
 
   ```bash

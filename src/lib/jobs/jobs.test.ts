@@ -11,7 +11,7 @@ const POSTING = `What You'll Need
 Strong expertise in React and TypeScript.
 Bonus
 Experience with Style Dictionary.
-Chewy is an equal opportunity employer.`;
+CompanyA is an equal opportunity employer.`;
 
 const RESUME = `Frontend Engineer | Acme | Jan 2019 – Present
 ● Built a shared component library in React and TypeScript used by 9 teams.

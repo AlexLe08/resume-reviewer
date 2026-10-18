@@ -23,7 +23,7 @@ describe('findDateRanges', () => {
     ['06/2019 - 03/2021', '2019-6', '2021-3'],
     ['2015 - 2019', '2015-1', '2019-12'],
     ['May 2023 –\nDec 2024', '2023-5', '2024-12'],
-    ['Software Engineer II - CVS Search | CVS Health | Woonsocket, RI May 2023 – Dec 2024', '2023-5', '2024-12'],
+    ['Software Engineer II - CompanyB Search | CompanyB Health | Springfield, RI May 2023 – Dec 2024', '2023-5', '2024-12'],
   ];
 
   it.each(cases)('reads %j', (input, start, end) => {
