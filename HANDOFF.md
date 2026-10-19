@@ -15,7 +15,7 @@ Last updated 2026-10-17. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 
 - **Evaluation uses synthetic fixtures only** (decision, 2026-10-17): no real resume is used for evals or the proofreader check. `npm run eval` reads public fixtures only.
 - **More fixtures where the hiring manager and recruiter should differ.** `skills-not-shown` split them on verdict (hiring manager "maybe" 3/3, recruiter "yes" 3/3), but it is one fixture. Labels for new fixtures are the user's call.
-- **Proofreader in `npm run eval`:** plain `npm run eval` runs the recruiter, then the proofreader once per `fixtures/*.labels.json` (temperature 0, so one run). `--persona proofreader` runs it alone. Counts only are printed; flags are saved in `eval-results/`. No `--rescore` for it yet.
+- **Proofreader in `npm run eval`:** plain `npm run eval` runs the recruiter, then the proofreader once per `fixtures/*.labels.json` (temperature 0, so one run). `--persona proofreader` runs it alone. Counts only are printed; flags are saved in `eval-results/`. No `--rescore` for it yet. **Baseline** (commit `e37febe`, 2026-10-19): non-words 10/10, real-word 9/13 (`typos` 2/5, `typos2` 7/8), casing 5/6, traps flagged 0/25, no other false alarms, all quotes grounded. Compare any proofreader prompt change against this.
 - **Uncommitted at the time of writing:** `.claude/settings.json` (private-folder access, see CLAUDE.md) and `AGENTS.md` (written by `next dev`). Both belong in the next commit.
 - **Hosting (Phase 5):** a full review is ~4-5 min locally; the route's `maxDuration = 60` would cut it short on a host.
 
