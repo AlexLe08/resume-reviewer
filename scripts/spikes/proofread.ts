@@ -18,52 +18,10 @@ import { getEnv } from '@/lib/env';
 import { gitInfo } from '@/lib/eval/git';
 import { modelName, providerName } from '@/lib/llm';
 import { checkSpelling } from '@/lib/proofread/code';
-import { loadLabeledResume, type LabelItem } from '@/lib/proofread/labels';
+import { loadLabeledResume } from '@/lib/proofread/labels';
 import { runProofread } from '@/lib/proofread/model';
-import { countByKind, scoreFlags, type Flag, type KindCounts, type Scored } from '@/lib/proofread/score';
-
-interface Result {
-  approach: 'code' | 'model' | 'both' | 'hybrid';
-  run: number;
-  latencyMs: number;
-  kinds: KindCounts;
-  trapsFlagged: number;
-  trapsTotal: number;
-  unlabeled: number;
-  arguable: number;
-  /** Model only: findings whose quote isn't in the resume. */
-  ungrounded: number;
-  flags: Flag[];
-  scored: { caught: string[]; trapFlags: unknown[]; unlabeled: Flag[]; arguable: unknown[] };
-}
-
-function summarize(approach: Result['approach'], run: number, latencyMs: number, flags: Flag[], labels: LabelItem[], ungrounded = 0): Result {
-  const scored: Scored = scoreFlags(flags, labels);
-  return {
-    approach,
-    run,
-    latencyMs,
-    kinds: countByKind(scored, labels),
-    trapsFlagged: new Set(scored.trapFlags.map((t) => t.labelId)).size,
-    trapsTotal: labels.filter((l) => l.kind === 'trap').length,
-    unlabeled: scored.unlabeled.length,
-    arguable: scored.arguable.length,
-    ungrounded,
-    flags,
-    scored: { caught: [...scored.caught], trapFlags: scored.trapFlags, unlabeled: scored.unlabeled, arguable: scored.arguable },
-  };
-}
-
-function line(r: Result): string {
-  const k = r.kinds;
-  const frac = (c: { caught: number; total: number }) => (c.total === 0 ? '  -  ' : `${c.caught}/${c.total}`.padStart(5));
-  return (
-    `  ${r.approach.padEnd(6)} nonword ${frac(k.nonword)}  realword ${frac(k.realword)}  casing ${frac(k['tech-casing'])}  ` +
-    `traps flagged ${r.trapsFlagged}/${r.trapsTotal}  other false alarms ${r.unlabeled}  style calls ${r.arguable}` +
-    (r.approach === 'model' || r.approach === 'hybrid' ? `  ungrounded ${r.ungrounded}` : '') +
-    `  ${r.latencyMs} ms`
-  );
-}
+import { formatResultLine as line, summarizeFlags as summarize, type ProofreadResult as Result } from '@/lib/proofread/report';
+import type { Flag } from '@/lib/proofread/score';
 
 async function main(): Promise<void> {
   try {

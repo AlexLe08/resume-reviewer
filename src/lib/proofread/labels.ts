@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 import { loadResume } from '@/lib/eval/fixtures';
@@ -39,6 +39,12 @@ export interface LabeledResume {
   description: string;
   items: LabelItem[];
   doc: ExtractedDocument;
+}
+
+/** Paths of every *.labels.json directly inside `dir`, sorted. */
+export async function findLabelFiles(dir: string): Promise<string[]> {
+  const names = await readdir(dir);
+  return names.filter((n) => n.endsWith('.labels.json')).sort().map((n) => path.join(dir, n));
 }
 
 export async function loadLabeledResume(labelsPath: string): Promise<LabeledResume> {

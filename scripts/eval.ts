@@ -2,7 +2,9 @@
  * Runs the real review pipeline against fixture resumes and reports how often
  * each expectation holds. Usage:
  *
- *   npm run eval                          all fixtures, 3 runs each
+ *   npm run eval                          recruiter on all fixtures (3 runs each), then the proofreader
+ *   npm run eval -- --persona hiring-manager   one persona, no proofreader
+ *   npm run eval -- --persona proofreader      only the proofreader, on fixtures/*.labels.json
  *   npm run eval -- --runs 1              quick pass
  *   npm run eval -- --only recent-gap     one fixture (matches by name)
  *   LLM_PROVIDER=gemini npm run eval      override a setting for one run
@@ -16,6 +18,9 @@ import { expectationsFor, findFixtures, validateFixture, loadResume } from '@/li
 import { gitInfo } from '@/lib/eval/git';
 import { formatSummary, summarize, type RunRecord } from '@/lib/eval/report';
 import { modelName, providerName } from '@/lib/llm';
+import { findLabelFiles, loadLabeledResume, type LabeledResume } from '@/lib/proofread/labels';
+import { runProofread } from '@/lib/proofread/model';
+import { formatResultLine, summarizeFlags } from '@/lib/proofread/report';
 import { PERSONAS, type PersonaId } from '@/lib/review/personas';
 import { runReview } from '@/lib/review/run';
 import type { GroundedReview } from '@/lib/review/grounding';
@@ -32,7 +37,7 @@ async function main(): Promise<void> {
     options: {
       runs: { type: 'string', default: '3' },
       only: { type: 'string' },
-      persona: { type: 'string', default: 'recruiter' },
+      persona: { type: 'string' },
       rescore: { type: 'string' },
     },
   });
@@ -46,21 +51,37 @@ async function main(): Promise<void> {
   if (!Number.isInteger(runs) || runs < 1 || runs > 20) {
     throw new Error('--runs must be a whole number from 1 to 20.');
   }
-  if (!Object.hasOwn(PERSONAS, values.persona)) {
-    throw new Error(`Unknown persona "${values.persona}". Options: ${Object.keys(PERSONAS).join(', ')}.`);
+  const choice = values.persona ?? 'recruiter';
+  if (choice !== PROOFREADER && !Object.hasOwn(PERSONAS, choice)) {
+    throw new Error(`Unknown persona "${choice}". Options: ${[...Object.keys(PERSONAS), PROOFREADER].join(', ')}.`);
   }
-  const persona = PERSONAS[values.persona as PersonaId];
 
   getEnv(); // Fail fast on bad configuration, before any slow work.
 
   const root = process.cwd();
-  const all = await findFixtures(fixtureSources(root));
   const filters = values.only?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+  // Plain `npm run eval` covers every reviewer that has an eval; naming a persona runs only that one.
+  const withProofreader = values.persona === undefined || choice === PROOFREADER;
+  // Load the labeled resumes up front too, so a broken labels file fails before the slow part.
+  const labeled = withProofreader ? await loadLabeledFixtures(root, filters) : [];
+  if (choice === PROOFREADER) {
+    if (labeled.length === 0) throw new Error('No fixtures/*.labels.json files match.');
+    await evalProofreader(labeled, root);
+    return;
+  }
+  const persona = PERSONAS[choice as PersonaId];
+
+  const all = await findFixtures(fixtureSources(root));
   const named = filters.length > 0 ? all.filter((f) => filters.some((name) => f.name.includes(name))) : all;
   // A reviewer is only scored on fixtures that say what to expect from it.
   const fixtures = named.filter((f) => expectationsFor(f, persona.id) !== undefined);
   if (named.length > fixtures.length) {
     console.log(`Skipping ${named.length - fixtures.length} fixture(s) with no expectations for ${persona.id}.`);
+  }
+  if (fixtures.length === 0 && labeled.length > 0) {
+    // --only named only proofreader fixtures.
+    await evalProofreader(labeled, root);
+    return;
   }
   if (fixtures.length === 0) {
     throw new Error(values.only ? `No fixture name contains "${values.only}".` : 'No *.eval.json files found in fixtures/.');
@@ -161,12 +182,62 @@ async function main(): Promise<void> {
   };
   await writeFile(file, JSON.stringify({ meta, summaries, records }, null, 2));
   console.log(`\nFull results: ${path.relative(root, file)}`);
+
+  if (labeled.length > 0) {
+    console.log('');
+    await evalProofreader(labeled, root);
+  }
+}
+
+const PROOFREADER = 'proofreader';
+
+/** Public labeled resumes only: evaluation uses synthetic fixtures (CLAUDE.md). */
+async function loadLabeledFixtures(root: string, filters: string[]): Promise<LabeledResume[]> {
+  const files = await findLabelFiles(path.join(root, 'fixtures'));
+  const loaded = await Promise.all(files.map((f) => loadLabeledResume(f)));
+  return filters.length > 0 ? loaded.filter((l) => filters.some((name) => l.name.includes(name))) : loaded;
+}
+
+/**
+ * The proofreader runs at temperature 0, so repeating a run repeats the output:
+ * one run per labeled resume, whatever --runs says.
+ */
+async function evalProofreader(labeled: LabeledResume[], root: string): Promise<void> {
+  const git = gitInfo();
+  console.log(
+    `Proofreader: ${labeled.length} labeled resume(s) × 1 run with ${providerName()} / ${modelName()}, ` +
+      `commit: ${git.commit ?? 'unknown'}${git.dirty ? ' (uncommitted changes)' : ''}\n`,
+  );
+  const results: (ReturnType<typeof summarizeFlags> & { fixture: string })[] = [];
+  for (const item of labeled) {
+    process.stdout.write(`  ${item.name}\n`);
+    const outcome = await runProofread(item.doc.text, { log: false });
+    if (!outcome.ok) {
+      if (outcome.kind === 'aborted') break;
+      console.log(`    failed: ${outcome.message}`);
+      if (!outcome.retryable) break;
+      continue;
+    }
+    const flags = outcome.findings.map((f) => ({ word: f.word, context: f.quote }));
+    const result = summarizeFlags('model', 1, outcome.call.latencyMs, flags, item.items, outcome.findings.filter((f) => !f.evidenceFound).length);
+    results.push({ ...result, fixture: item.name });
+    console.log(formatResultLine(result));
+  }
+
+  // Flags can quote the resumes, so this stays in gitignored eval-results/.
+  const outDir = path.join(root, 'eval-results');
+  await mkdir(outDir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const file = path.join(outDir, `${stamp}_proofread-eval_${providerName()}_${modelName().replace(/[^a-z0-9.-]/gi, '_')}.json`);
+  const meta = { startedAt: new Date().toISOString(), provider: providerName(), model: modelName(), reviewer: PROOFREADER, temperature: 0, git };
+  await writeFile(file, JSON.stringify({ meta, results }, null, 2));
+  console.log(`\nFull results: ${path.relative(root, file)}`);
 }
 
 function fixtureSources(root: string) {
   return [
+    // Public fixtures only: evaluation uses synthetic resumes (CLAUDE.md).
     { dir: path.join(root, 'fixtures'), prefix: '' },
-    { dir: path.join(root, 'fixtures', 'private'), prefix: 'private/' },
   ];
 }
 

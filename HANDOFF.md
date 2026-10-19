@@ -13,9 +13,9 @@ Last updated 2026-10-17. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 
 ## Next
 
-- **Evaluation uses synthetic fixtures only** (decision, 2026-10-17): no real resume is used for evals or the proofreader check. `npm run eval` still tries any fixture in `fixtures/private/`, and one points at a PDF that is missing, so run it with `--only` and the public fixture names, or remove that fixture.
+- **Evaluation uses synthetic fixtures only** (decision, 2026-10-17): no real resume is used for evals or the proofreader check. `npm run eval` reads public fixtures only.
 - **More fixtures where the hiring manager and recruiter should differ.** `skills-not-shown` split them on verdict (hiring manager "maybe" 3/3, recruiter "yes" 3/3), but it is one fixture. Labels for new fixtures are the user's call.
-- **Proofreader in the eval harness:** it is scored by `spike:proofread` on `*.labels.json` only, not by `npm run eval`. Decide whether it should be a regular eval or stay a spike.
+- **Proofreader in `npm run eval`:** plain `npm run eval` runs the recruiter, then the proofreader once per `fixtures/*.labels.json` (temperature 0, so one run). `--persona proofreader` runs it alone. Counts only are printed; flags are saved in `eval-results/`. No `--rescore` for it yet.
 - **Uncommitted at the time of writing:** `.claude/settings.json` (private-folder access, see CLAUDE.md) and `AGENTS.md` (written by `next dev`). Both belong in the next commit.
 - **Hosting (Phase 5):** a full review is ~4-5 min locally; the route's `maxDuration = 60` would cut it short on a host.
 
