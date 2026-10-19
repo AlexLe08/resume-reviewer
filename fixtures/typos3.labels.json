@@ -1,0 +1,22 @@
+{
+  "description": "Draft, awaiting confirmation: a backend resume with eight real-word errors (words that are spelled right but wrong for the sentence) that differ from typos and typos2, and correct technology names that must not be flagged.",
+  "resume": "typos3.txt",
+  "items": [
+    { "id": "r1", "kind": "realword", "text": "principle", "context": "as the principle engineer", "fix": "principal" },
+    { "id": "r2", "kind": "realword", "text": "an rollback", "context": "migrations an rollback scripts", "fix": "and rollback" },
+    { "id": "r3", "kind": "realword", "text": "of the critical", "context": "image build of the critical path", "fix": "off the critical" },
+    { "id": "r4", "kind": "realword", "text": "compliment", "context": "tests that compliment the existing", "fix": "complement" },
+    { "id": "r5", "kind": "realword", "text": "weather", "context": "decide weather to add", "fix": "whether" },
+    { "id": "r6", "kind": "realword", "text": "incidence", "context": "responded to incidence during", "fix": "incidents" },
+    { "id": "r7", "kind": "realword", "text": "advice", "context": "runbooks to advice engineers", "fix": "advise" },
+    { "id": "r8", "kind": "realword", "text": "quiet", "context": "was quiet a challenge", "fix": "quite" },
+    { "id": "t1", "kind": "trap", "text": "Kubernetes", "context": "Node.js services on Kubernetes" },
+    { "id": "t2", "kind": "trap", "text": "Prisma", "context": "schema with Prisma" },
+    { "id": "t3", "kind": "trap", "text": "Datadog", "context": "services with Datadog" },
+    { "id": "t4", "kind": "trap", "text": "Fastify", "context": "endpoints in Fastify" },
+    { "id": "t5", "kind": "trap", "text": "Vercel", "context": "deployed them to Vercel" },
+    { "id": "t6", "kind": "trap", "text": "Terraform", "context": "code with Terraform" },
+    { "id": "t7", "kind": "trap", "text": "Harborline", "context": "Harborline Logistics" },
+    { "id": "t8", "kind": "trap", "text": "Brightwell", "context": "Brightwell Apps" }
+  ]
+}

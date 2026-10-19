@@ -1,0 +1,23 @@
+Priya Nair
+Austin, TX | (512) 555-0147 | priya.nair@example.com
+
+EXPERIENCE
+Backend Engineer | Harborline Logistics | Austin, TX | Feb 2020 – Present
+● Served as the principle engineer on the billing migration from a monolith to Node.js services on Kubernetes.
+● Designed the schema with Prisma and wrote migrations an rollback scripts for each release.
+● Cut deploy time by half by moving the image build of the critical path.
+● Wrote integration tests that compliment the existing unit suite and caught 12 regressions before release.
+● Ran load tests to decide weather to add read replicas, and held p95 latency under 200 ms.
+● Monitored the services with Datadog and responded to incidence during the on-call rotation.
+● Wrote runbooks to advice engineers during outages, which cut average recovery time by 25%.
+● Migrated 40 services to Kubernetes, which was quiet a challenge for a team of three.
+
+Software Engineer | Brightwell Apps | Dallas, TX | Jul 2017 – Jan 2020
+● Built REST endpoints in Fastify and deployed them to Vercel and AWS.
+● Managed infrastructure as code with Terraform.
+
+SKILLS
+JavaScript, TypeScript, Node.js, Fastify, Prisma, PostgreSQL, Kubernetes, Terraform, Datadog
+
+EDUCATION
+B.S. Computer Science | University of Texas at Dallas | 2017
