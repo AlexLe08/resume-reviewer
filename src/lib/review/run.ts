@@ -6,6 +6,7 @@ import { annotateGrounding, type GroundedReview } from './grounding';
 import type { Persona } from './personas';
 import { buildReviewPrompt } from './prompt';
 import { ReviewSchema } from './schema';
+import { applyVerdictCap } from './verdict';
 
 export type ReviewOutcome =
   | { ok: true; review: GroundedReview; call: CallRecord }
@@ -50,7 +51,7 @@ export async function runReview(
   });
   if (!outcome.ok) return outcome;
 
-  const review = annotateGrounding(outcome.data, doc.text);
+  const review = applyVerdictCap(annotateGrounding(outcome.data, doc.text));
   if (log) {
     console.info(JSON.stringify({ event: 'review_grounding', personaId: persona.id, ...review.grounding }));
   }

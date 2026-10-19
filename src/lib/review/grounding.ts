@@ -7,6 +7,8 @@ export interface GroundedReview extends Omit<Review, 'strengths' | 'issues'> {
   issues: WithGrounding<Review['issues'][number]>[];
   /** How many quotes were checked, and how many appear in the resume. */
   grounding: { quotes: number; found: number };
+  /** Set when code lowered the verdict (see verdict.ts): `wouldAdvance` is the capped answer. */
+  verdictCap?: { modelVerdict: Review['wouldAdvance'] };
 }
 
 /**

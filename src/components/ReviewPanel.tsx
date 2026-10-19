@@ -58,6 +58,12 @@ function ReviewBody({ review }: { review: GroundedReview }) {
   return (
     <>
       <p className={`verdict verdict-${review.wouldAdvance}`}>{VERDICT_TEXT[review.wouldAdvance]}</p>
+      {review.verdictCap && (
+        <p className="verdict-note">
+          The reviewer leaned toward moving forward, but it also raised a high-severity issue below, so the answer is
+          lowered to "On the fence".
+        </p>
+      )}
       <p className="summary">{review.summary}</p>
 
       {issues.length > 0 && (

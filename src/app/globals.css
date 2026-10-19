@@ -322,6 +322,13 @@ p {
   color: var(--red-pen);
 }
 
+.verdict-note {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  max-width: 65ch;
+  margin: calc(var(--space-2) * -1) 0 var(--space-3);
+}
+
 .summary {
   font-size: 1.0625rem;
   max-width: 65ch;
