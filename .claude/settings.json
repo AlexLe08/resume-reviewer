@@ -1,6 +1,10 @@
 {
   "permissions": {
-    "allow": ["Read(./fixtures/private/**)", "Edit(./fixtures/private/**)"],
-    "deny": ["Read(./eval-results/**)", "Read(./.env)", "Read(./.env.*)"]
+    "allow": [
+      "Read(./fixtures/private/**)",
+      "Edit(./fixtures/private/**)",
+      "Read(./eval-results/**)"
+    ],
+    "deny": ["Read(./.env)", "Read(./.env.*)"]
   }
 }

@@ -1,6 +1,6 @@
 # Handoff: where the project stands
 
-Last updated 2026-10-17. Pair with `CLAUDE.md` (how to work here) and `DECISIONS.md` (why).
+Last updated 2026-10-19. Pair with `CLAUDE.md` (how to work here) and `DECISIONS.md` (why).
 
 ## Done
 
@@ -14,7 +14,7 @@ Last updated 2026-10-17. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 ## Next
 
 - **Evaluation uses synthetic fixtures only** (decision, 2026-10-17): no real resume is used for evals or the proofreader check. `npm run eval` reads public fixtures only.
-- **More fixtures where the hiring manager and recruiter should differ.** `skills-not-shown` split them on verdict (hiring manager "maybe" 3/3, recruiter "yes" 3/3), but it is one fixture. Labels for new fixtures are the user's call.
+- **Hiring manager vs recruiter:** four more fixtures (`short-tenures`, `career-changer`, `inflated-scope`, `wrong-specialty`) did not separate them (DECISIONS 7.3). The reviews name the problems but the verdict does not follow their own issue list (a high-severity mismatch with a "yes"). Next decision: try a code cap on the verdict by issue severity as its own experiment (full eval, both reviewers), or leave it. Those four fixtures currently score 26/30 (recruiter) and 27/30 (hiring manager), the misses all verdicts.
 - **Proofreader in `npm run eval`:** plain `npm run eval` runs the recruiter, then the proofreader once per `fixtures/*.labels.json` (temperature 0, so one run). `--persona proofreader` runs it alone. Counts only are printed; flags are saved in `eval-results/`. No `--rescore` for it yet. **Baseline** (2026-10-19, three fixtures `typos`, `typos2`, `typos3`; commit `e37febe` for the first two, `6d6c567` for `typos3`): non-words 10/10, real-word 16/21 (`typos` 2/5, `typos2` 7/8, `typos3` 7/8), casing 5/6, traps flagged 0/33, no other false alarms, all quotes grounded. Compare any proofreader prompt change against this. Left as is (user decision): the four real-word misses ("to were", "Lead" for "Led", "uses" for "users", "of" for "off") share no clear pattern, and 21 labels are too few to tell a prompt change from noise, so add labeled cases before tuning.
 - **Uncommitted at the time of writing:** `.claude/settings.json` (private-folder access, see CLAUDE.md) and `AGENTS.md` (written by `next dev`). Both belong in the next commit.
 - **Hosting (Phase 5):** a full review is ~4-5 min locally; the route's `maxDuration = 60` would cut it short on a host.

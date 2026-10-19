@@ -75,7 +75,7 @@ fixtures/             public fixtures (*.eval.json for reviews, *.labels.json fo
 
 ## Privacy and constraints
 
-- `.claude/settings.json` denies Read on `eval-results/` and `.env*`, and allows Read/Edit on `fixtures/private/` (the user opened it on 2026-10-17 to anonymize company names). **Evaluation uses synthetic public fixtures only** (user decision): don't run evals or spikes on private fixtures, and open them only when the user asks. If a problem needs a real-world case, ask for a synthetic fixture that reproduces it.
+- `.claude/settings.json` denies Read on `.env*`, and allows Read on `eval-results/` (opened 2026-10-19 to read failing reviews of synthetic fixtures) and Read/Edit on `fixtures/private/` (opened 2026-10-17 to anonymize company names). Older files there may hold text from the user's real resume (runs before the synthetic-only decision): read only results you just produced from public fixtures, and ask before opening any other file. **Evaluation uses synthetic public fixtures only** (user decision): don't run evals or spikes on private fixtures, and open them only when the user asks. If a problem needs a real-world case, ask for a synthetic fixture that reproduces it.
 - Never commit or print resume content, notes, postings, or `eval-results/`. `DECISIONS.md` and `HANDOFF.md` must contain no personal details or real company names (use placeholders such as `CompanyA`; test fixtures too). Git history before 2026-10-18 still has some; accepted.
 - Notes are used per request and never stored. Only writing-style settings persist (browser `localStorage`).
 - No-spend: development must cost nothing.
