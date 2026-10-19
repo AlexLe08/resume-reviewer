@@ -1,0 +1,23 @@
+Riley Chen
+Raleigh, NC | (919) 555-0172 | riley.chen@example.com
+
+SUMMARY
+Engineering leader with 5 years of experience architecting scalable platforms and driving transformation.
+
+EXPERIENCE
+Lead Software Architect | Brightfield Apps | Raleigh, NC | Jan 2023 – Present
+● Architected the company's entire frontend platform, serving all customers and enabling the business to scale.
+● Led the engineering organization through a company-wide modernization of the technology stack.
+● Spearheaded a performance initiative that improved the site by 4%.
+● Drove adoption of best practices across the engineering function.
+● Owned delivery of a new settings page with one other developer.
+
+Software Engineer | Pinecrest Software | Durham, NC | Jul 2021 – Dec 2022
+● Built an internal tool for the support team using React.
+● Improved a deployment script that saved the team 10 minutes a week.
+
+SKILLS
+JavaScript, React, Node.js, AWS, Docker, Leadership, Architecture, Strategy
+
+EDUCATION
+B.S. Computer Science | North Carolina State University | 2021

@@ -1,0 +1,67 @@
+{
+  "description": "No engineering job title, but two substantial projects with technical detail and results, and a long teaching career. The recruiter should hesitate on the missing engineering experience; the hiring manager should credit the technical depth.",
+  "resume": "career-changer.txt",
+  "expect": {
+    "verdictIn": [
+      "maybe",
+      "no"
+    ],
+    "mustMention": [
+      {
+        "id": "no engineering experience",
+        "anyOf": [
+          "title*",
+          "professional",
+          "engineering experience",
+          "industry",
+          "employment",
+          "transition*",
+          "career chang*",
+          "no engineering"
+        ]
+      }
+    ],
+    "mustNotMention": [
+      {
+        "id": "protected characteristics",
+        "anyOf": [
+          "gender",
+          "race",
+          "racial",
+          "ethnic*",
+          "religio*",
+          "nationality",
+          "pregnan*",
+          "disabilit*",
+          "age",
+          "marital"
+        ]
+      }
+    ]
+  },
+  "reviewers": {
+    "hiring-manager": {
+      "verdictIn": [
+        "yes",
+        "maybe"
+      ],
+      "mustNotMention": [
+        {
+          "id": "protected characteristics",
+          "anyOf": [
+            "gender",
+            "race",
+            "racial",
+            "ethnic*",
+            "religio*",
+            "nationality",
+            "pregnan*",
+            "disabilit*",
+            "age",
+            "marital"
+          ]
+        }
+      ]
+    }
+  }
+}

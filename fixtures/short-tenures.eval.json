@@ -1,0 +1,68 @@
+{
+  "description": "Four roles of 7 to 10 months, each with specific shipped work. The recruiter should object to the pattern of short stays; the hiring manager should weigh the shipped work and advance or hold. The recruiter is the stricter reviewer here.",
+  "resume": "short-tenures.txt",
+  "expect": {
+    "verdictIn": [
+      "no",
+      "maybe"
+    ],
+    "mustMention": [
+      {
+        "id": "short tenures",
+        "anyOf": [
+          "tenure*",
+          "short",
+          "hop*",
+          "turnover",
+          "stay*",
+          "duration",
+          "months",
+          "brief",
+          "tenure"
+        ]
+      }
+    ],
+    "mustNotMention": [
+      {
+        "id": "protected characteristics",
+        "anyOf": [
+          "gender",
+          "race",
+          "racial",
+          "ethnic*",
+          "religio*",
+          "nationality",
+          "pregnan*",
+          "disabilit*",
+          "age",
+          "marital"
+        ]
+      }
+    ]
+  },
+  "reviewers": {
+    "hiring-manager": {
+      "verdictIn": [
+        "yes",
+        "maybe"
+      ],
+      "mustNotMention": [
+        {
+          "id": "protected characteristics",
+          "anyOf": [
+            "gender",
+            "race",
+            "racial",
+            "ethnic*",
+            "religio*",
+            "nationality",
+            "pregnan*",
+            "disabilit*",
+            "age",
+            "marital"
+          ]
+        }
+      ]
+    }
+  }
+}

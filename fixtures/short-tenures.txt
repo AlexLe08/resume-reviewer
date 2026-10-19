@@ -1,0 +1,28 @@
+Marcus Bell
+Portland, OR | (503) 555-0118 | marcus.bell@example.com
+
+SUMMARY
+Frontend engineer with 3 years of experience shipping customer-facing features in React and TypeScript.
+
+EXPERIENCE
+Frontend Engineer | Tidewater Health | Portland, OR | Jan 2026 – Present
+● Built the appointment rescheduling flow in React, cutting phone reschedules by 31% in its first quarter.
+● Replaced a hand-rolled form library with React Hook Form across 14 screens, removing about 2,000 lines of code.
+
+Frontend Engineer | Copperline Retail | Portland, OR | Mar 2025 – Nov 2025
+● Shipped a wishlist feature used by 18% of weekly shoppers within two months of launch.
+● Cut product page load time from 4.2 s to 2.1 s by lazy-loading reviews and compressing hero images.
+
+Software Engineer | Northgate Fintech | Seattle, WA | Jun 2024 – Jan 2025
+● Built the transaction history table with filtering and CSV export, adopted by 6 internal support teams.
+● Wrote 120 Jest tests for the payments form, raising coverage on that module from 22% to 81%.
+
+Web Developer | Alderbrook Studio | Portland, OR | Oct 2023 – May 2024
+● Delivered 9 client marketing sites in React and Next.js, each live within 3 weeks of kickoff.
+● Set up Lighthouse checks in CI that caught 5 performance regressions before release.
+
+SKILLS
+JavaScript, TypeScript, React, Next.js, Jest, React Hook Form, CSS, Lighthouse
+
+EDUCATION
+B.S. Computer Science | Portland State University | 2022

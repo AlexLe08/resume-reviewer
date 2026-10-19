@@ -1,0 +1,28 @@
+Dana Whitfield
+Madison, WI | (608) 555-0139 | dana.whitfield@example.com
+
+SUMMARY
+Former high school math teacher moving into software engineering, with two full-stack projects built and deployed on my own.
+
+PROJECTS
+Classroom Quiz Scheduler | TypeScript, React, Node.js, PostgreSQL
+● Built a web app that schedules quizzes across 6 classes and avoids conflicts, replacing a spreadsheet that took 2 hours a week.
+● Modeled the schedule as a constraint problem and wrote a backtracking solver that handles 40 sessions in under 300 ms.
+● Added row-level access rules in PostgreSQL so each teacher sees only their own classes, and wrote 85 tests with Vitest.
+● Deployed with GitHub Actions and Docker; used daily by 11 teachers for one semester.
+
+Grade Trend Dashboard | Python, FastAPI, React
+● Built an API that imports gradebook exports and flags students whose scores dropped for three weeks in a row.
+● Cut import time for 4,000 rows from 48 s to 3 s by batching inserts and moving validation out of the request path.
+● Wrote the data model and migration notes in the README so another teacher could run it.
+
+EXPERIENCE
+Mathematics Teacher | Eastside High School | Madison, WI | Aug 2016 – Jun 2026
+● Taught algebra and statistics to about 150 students a year; raised the course pass rate from 78% to 91% over five years.
+● Led the department's switch to a shared online gradebook and trained 9 colleagues.
+
+SKILLS
+TypeScript, React, Node.js, PostgreSQL, Python, FastAPI, Docker, GitHub Actions, Vitest
+
+EDUCATION
+B.S. Mathematics | University of Wisconsin–Madison | 2016

@@ -1,0 +1,69 @@
+{
+  "description": "Strong verbs and a senior-sounding title over a team of two, tiny numbers and vague claims. The recruiter sees leadership language and advances; the hiring manager should question the scope and the claims.",
+  "resume": "inflated-scope.txt",
+  "expect": {
+    "verdictIn": [
+      "yes",
+      "maybe"
+    ],
+    "mustNotMention": [
+      {
+        "id": "protected characteristics",
+        "anyOf": [
+          "gender",
+          "race",
+          "racial",
+          "ethnic*",
+          "religio*",
+          "nationality",
+          "pregnan*",
+          "disabilit*",
+          "age",
+          "marital"
+        ]
+      }
+    ]
+  },
+  "reviewers": {
+    "hiring-manager": {
+      "verdictIn": [
+        "maybe",
+        "no"
+      ],
+      "mustMention": [
+        {
+          "id": "inflated scope",
+          "anyOf": [
+            "scope",
+            "inflat*",
+            "overstat*",
+            "vague",
+            "unsupported",
+            "claim*",
+            "ownership",
+            "seniority",
+            "team of",
+            "one other"
+          ]
+        }
+      ],
+      "mustNotMention": [
+        {
+          "id": "protected characteristics",
+          "anyOf": [
+            "gender",
+            "race",
+            "racial",
+            "ethnic*",
+            "religio*",
+            "nationality",
+            "pregnan*",
+            "disabilit*",
+            "age",
+            "marital"
+          ]
+        }
+      ]
+    }
+  }
+}
