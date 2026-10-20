@@ -1,11 +1,9 @@
 import { countByKind, scoreFlags, type Flag, type KindCounts, type Scored } from './score';
 import type { LabelItem } from './labels';
 
-export type Approach = 'code' | 'model' | 'both' | 'hybrid';
-
 /** One scored proofreading run on one labeled resume. */
 export interface ProofreadResult {
-  approach: Approach;
+  approach: 'model';
   run: number;
   latencyMs: number;
   kinds: KindCounts;
@@ -13,14 +11,14 @@ export interface ProofreadResult {
   trapsTotal: number;
   unlabeled: number;
   arguable: number;
-  /** Model only: findings whose quote isn't in the resume. */
+  /** Findings whose quote isn't in the resume. */
   ungrounded: number;
   flags: Flag[];
   scored: { caught: string[]; trapFlags: unknown[]; unlabeled: Flag[]; arguable: unknown[] };
 }
 
 export function summarizeFlags(
-  approach: Approach,
+  approach: 'model',
   run: number,
   latencyMs: number,
   flags: Flag[],
@@ -50,7 +48,7 @@ export function formatResultLine(r: ProofreadResult): string {
   return (
     `  ${r.approach.padEnd(6)} nonword ${frac(k.nonword)}  realword ${frac(k.realword)}  casing ${frac(k['tech-casing'])}  ` +
     `traps flagged ${r.trapsFlagged}/${r.trapsTotal}  other false alarms ${r.unlabeled}  style calls ${r.arguable}` +
-    (r.approach === 'model' || r.approach === 'hybrid' ? `  ungrounded ${r.ungrounded}` : '') +
+    `  ungrounded ${r.ungrounded}` +
     `  ${r.latencyMs} ms`
   );
 }

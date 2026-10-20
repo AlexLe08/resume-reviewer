@@ -19,7 +19,7 @@ Resume Reviewer: a Next.js + TypeScript app that shows what a parser extracts fr
 | `npm run eval:jobs -- --stage extract\|match\|both`                          | Job-matching evals; also `--only`, `--runs`, `--rescore`                                                               |
 | `npm run match -- --resume <pdf> --job <txt>`                                | One job match in the terminal                                                                                          |
 | `npm run spike:bullets` / `npm run spike:judge`                              | Bullet-loop and judge spikes                                                                                           |
-| `npm run spike:proofread -- --fixture <labels> --only code\|model\|hybrid --show` | Proofreader scored on a `*.labels.json` file; `--show` prints flags (may contain resume text)                  |
+| `npm run spike:proofread -- --fixture <labels> --show` | Proofreader scored on a `*.labels.json` file; `--show` prints flags (may contain resume text)                  |
 | `npm run anonymize` / `npm run anonymize -- --write`                         | Replace names in `fixtures/private/` and listed tracked files from `fixtures/private/anonymize.map.json`; dry run by default, prints counts only |
 | `npm run demo:record` / `-- --only <sample>` | Record real model answers for the demo's four samples into `demo/recordings` (about 20 minutes; a full run clears the folder first). Needed after any prompt, persona, fact, schema or sample change |
 | `LLM_PROVIDER=replay npm run dev` | The hosted demo build: replays the recordings, no model, only the samples have reviews |
@@ -40,7 +40,7 @@ src/lib/llm/          provider boundary (ollama, gemini, mock), retry, usage; ca
 src/lib/checks/       deterministic resume checks, timeline (dates computed in code)
 src/lib/review/       personas (recruiter, hiring manager), prompt, schema, grounding (quote checking), runReview(); reviewers.ts = the ordered Reviewer list and runReviewers()
 src/lib/demo/         demo samples (catalog.ts is pure so the browser can use it) and DEMO_TODAY; recordings live in demo/recordings
-src/lib/proofread/    proofreader: model call (model.ts), labels format + validation, scoring; code.ts is the cspell checker used by the spike only
+src/lib/proofread/    proofreader: model call (model.ts), labels format + validation, scoring
 src/lib/jobs/         requirement extraction + matching (a workflow, not an agent: see DECISIONS §6.2)
 src/lib/bullets/      evaluator–optimizer loop: checks.ts (code checks), loop.ts (draft → check → judge → revise)
 src/lib/pdf/          PDF text extraction (unpdf)

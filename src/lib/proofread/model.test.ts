@@ -12,14 +12,10 @@ describe('proofread prompt and schema', () => {
   });
 });
 
-describe('hybrid prompt', () => {
-  it('lists code-flagged words outside the resume tags and drops the misspelling duty', () => {
-    const { system, user } = buildProofreadPrompt('some text', { alreadyFlagged: ['bookign', 'bookign', 'fliters'] });
-    expect(user.split('</resume>')[1]).toContain('"bookign", "fliters"');
-    expect(system).not.toContain('- Misspelled words.\n');
-    expect(system).toContain('spell checker has already found');
-  });
-  it('is the plain prompt when there is no code result', () => {
-    expect(buildProofreadPrompt('t').system).toContain('- Misspelled words.');
+describe('prompt', () => {
+  it('asks for misspellings and puts the resume inside the tags', () => {
+    const { system, user } = buildProofreadPrompt('some text');
+    expect(system).toContain('- Misspelled words.');
+    expect(user).toContain('<resume>\nsome text\n</resume>');
   });
 });

@@ -276,7 +276,7 @@ Median time per review: ~78–86 s
 
 ## 7. Phase 3: multiple reviewers
 
-### 7.1 Is the proofreader a model? (`scripts/spikes/proofread.ts`)
+### 7.1 Is the proofreader a model? (`scripts/spikes/proofread.ts`; the code and hybrid modes were removed, see Cleanup below)
 
 - **Question:** the recruiter caught typos ~37% of the time (5.6). Does a code spell checker (cspell with its software-terms and companies dictionaries, no project wordlist) do the proofreader's job, or is a model needed?
 - **Setup:** two synthetic fixtures with user-confirmed labels: `typos` (6 non-word, 5 real-word, 3 tech-casing errors, 10 correct-but-uncommon "trap" terms) and `typos2` (3, 8, 3, 10). Model: new dedicated prompt and schema, temperature 0 set explicitly (`callStructured` has no default, so Ollama would use the model's own 1.0), quotes grounded as in reviews. One run each, since temperature-0 runs repeat.
@@ -296,7 +296,7 @@ Median time per review: ~78–86 s
   - The hybrid prompt was no better than the plain model on either fixture and worse on `typos2` (told to leave non-words to code, it lost `plyer`, a word code's dictionary accepts, and two real-word errors).
 - **Decision:** the proofreader is a model with the plain prompt. Code spell checking is not added: it finds almost nothing the model misses and brings false alarms.
 - **Caveats:** real-word recall was 2/5 on one fixture and 7/8 on the other, so ~70% pooled is a rough figure. One run per fixture, synthetic text, one model. No real-resume check will be run: evaluation stays on synthetic fixtures (7.2).
-- **Not decided:** whether `cspell-lib` stays as a dependency (it is a devDependency for the spike only).
+- **Cleanup (2026-10-20):** the `code` and `hybrid` modes, `src/lib/proofread/code.ts`, the `alreadyFlagged` prompt option and the `cspell-lib` dev dependency were removed. The numbers above are the record; the code is in git history. The plain prompt is unchanged. `spike:proofread` now scores the model alone.
 
 ### 7.2 Three reviewers in one stream, per-reviewer expectations
 
