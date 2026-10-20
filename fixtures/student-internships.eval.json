@@ -1,0 +1,74 @@
+{
+  "description": "A student with three summer internships of 2-4 months, each with specific results. Short date ranges here are normal, so neither reviewer should treat them as job-hopping or lower the verdict for them. Counter-fixture for the short-tenure fact (DECISIONS 7.4).",
+  "resume": "student-internships.txt",
+  "expect": {
+    "verdictIn": [
+      "yes",
+      "maybe"
+    ],
+    "mustNotMention": [
+      {
+        "id": "protected characteristics",
+        "anyOf": [
+          "gender",
+          "race",
+          "racial",
+          "ethnic*",
+          "religio*",
+          "nationality",
+          "pregnan*",
+          "disabilit*",
+          "age",
+          "marital"
+        ]
+      },
+      {
+        "id": "short stays read as job-hopping",
+        "anyOf": [
+          "hop*",
+          "unstab*",
+          "stability",
+          "turnover",
+          "short tenure*",
+          "short stint*"
+        ]
+      }
+    ]
+  },
+  "reviewers": {
+    "hiring-manager": {
+      "verdictIn": [
+        "yes",
+        "maybe"
+      ],
+      "mustNotMention": [
+        {
+          "id": "protected characteristics",
+          "anyOf": [
+            "gender",
+            "race",
+            "racial",
+            "ethnic*",
+            "religio*",
+            "nationality",
+            "pregnan*",
+            "disabilit*",
+            "age",
+            "marital"
+          ]
+        },
+        {
+          "id": "short stays read as job-hopping",
+          "anyOf": [
+            "hop*",
+            "unstab*",
+            "stability",
+            "turnover",
+            "short tenure*",
+            "short stint*"
+          ]
+        }
+      ]
+    }
+  }
+}

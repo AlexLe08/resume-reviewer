@@ -1,4 +1,4 @@
-import { analyzeTimeline, timelineFacts } from '@/lib/checks/timeline';
+import { analyzeTimeline, tenureFacts, timelineFacts } from '@/lib/checks/timeline';
 import { callStructured } from '@/lib/llm/structured';
 import type { CallRecord } from '@/lib/llm/usage';
 import type { ExtractedDocument } from '@/lib/pdf/extract';
@@ -36,7 +36,8 @@ export async function runReview(
   options: RunReviewOptions = {},
 ): Promise<ReviewOutcome> {
   const { log = true, today = new Date() } = options;
-  const facts = timelineFacts(analyzeTimeline(doc.text, today));
+  const timeline = analyzeTimeline(doc.text, today);
+  const facts = [...timelineFacts(timeline), ...tenureFacts(timeline, today)];
   const { system, user } = buildReviewPrompt(persona, doc.text, today, facts);
 
   const outcome = await callStructured({

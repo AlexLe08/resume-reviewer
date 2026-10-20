@@ -159,6 +159,33 @@ export function timelineFacts(timeline: Timeline): string[] {
   ];
 }
 
+/** Fewer short ranges than this is ordinary: one or two brief roles are not a pattern. */
+const SHORT_RANGE_MIN_COUNT = 3;
+const SHORT_RANGE_MONTHS = 12;
+
+/**
+ * States how many date ranges are shorter than a year, for the reviewer prompt.
+ * The recruiter named short stays as a medium issue and still said "yes"
+ * (DECISIONS 7.3), so code puts the pattern in front of the model as a number
+ * and the model judges it. It says nothing below three short ranges.
+ *
+ * Code can't tell a job from an internship, contract or course, so the
+ * sentence says so and leaves that call to the model. As with timelineFacts,
+ * the only resume text is the date range itself.
+ */
+export function tenureFacts(timeline: Timeline, today: Date): string[] {
+  const now = monthIndex({ year: today.getFullYear(), month: today.getMonth() + 1 });
+  const short = timeline.ranges
+    .map((r) => ({ raw: r.raw, months: (r.end === 'present' ? now : Math.min(monthIndex(r.end), now)) - monthIndex(r.start) }))
+    .filter((r) => r.months > 0 && r.months < SHORT_RANGE_MONTHS);
+  if (short.length < SHORT_RANGE_MIN_COUNT) return [];
+  const list = short.map((r) => `"${r.raw}" (${formatDuration(r.months)})`).join(', ');
+  return [
+    `The resume has ${short.length} date ranges shorter than a year: ${list}. ` +
+      'Code cannot tell jobs from internships, contracts or courses, so judge whether this looks like a pattern of short jobs.',
+  ];
+}
+
 /**
  * Total months covered by the resume's date ranges, with overlaps merged and
  * gaps between roles left out. "Present" counts up to today.

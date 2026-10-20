@@ -1,0 +1,28 @@
+Maya Torres
+Ann Arbor, MI | (734) 555-0126 | maya.torres@example.com
+
+SUMMARY
+Computer science student seeking a software engineering role after graduating in May 2027, with three summer internships.
+
+EXPERIENCE
+Software Engineering Intern | Larkspur Health | Detroit, MI | Jun 2026 – Aug 2026
+● Built an appointment reminder service in TypeScript and Node.js that cut no-shows at two pilot clinics by 14%.
+● Wrote 60 integration tests with Jest, raising coverage of the reminder module from 35% to 88%.
+
+Software Engineering Intern | Copperfield Logistics | Toledo, OH | Jun 2025 – Aug 2025
+● Added route filtering to the dispatch dashboard in React, used by 40 dispatchers within the first month.
+● Reduced the dashboard's initial load from 3.4 s to 1.9 s by splitting the bundle and caching API responses.
+
+Web Development Intern | Riverbend Nonprofit | Ann Arbor, MI | May 2024 – Aug 2024
+● Rebuilt the volunteer sign-up form in React, which raised completed sign-ups from 52% to 71%.
+● Fixed 25 accessibility issues flagged by an audit, including keyboard focus and form labels.
+
+PROJECTS
+Course Planner | TypeScript, React, PostgreSQL
+● Built a web app that checks degree requirements and suggests next-term courses, used by 30 classmates.
+
+SKILLS
+TypeScript, JavaScript, React, Node.js, PostgreSQL, Jest, Git
+
+EDUCATION
+B.S. Computer Science | University of Michigan | Aug 2023 – May 2027

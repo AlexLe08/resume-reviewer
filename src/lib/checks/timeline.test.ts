@@ -4,6 +4,7 @@ import {
   checkTimeline,
   findDateRanges,
   formatDuration,
+  tenureFacts,
   timelineFacts,
   totalCoveredMonths,
 } from './timeline';
@@ -102,6 +103,29 @@ describe('timelineFacts', () => {
 
   it('says nothing when no dates were found', () => {
     expect(timelineFacts(analyzeTimeline('No dates', TODAY))).toEqual([]);
+  });
+});
+
+describe('tenureFacts', () => {
+  const facts = (text: string) => tenureFacts(analyzeTimeline(text, TODAY), TODAY);
+
+  it('counts ranges under a year and quotes each, once there are three', () => {
+    expect(facts('Jan 2026 – Present\nMar 2025 – Nov 2025\nJun 2024 – Jan 2025\nOct 2022 – May 2024')).toEqual([
+      'The resume has 3 date ranges shorter than a year: "Jan 2026 – Present" (9 months), "Mar 2025 – Nov 2025" (8 months), ' +
+        '"Jun 2024 – Jan 2025" (7 months). Code cannot tell jobs from internships, contracts or courses, so judge whether this looks like a pattern of short jobs.',
+    ]);
+  });
+
+  it('says nothing for one or two short ranges', () => {
+    expect(facts('Mar 2025 – Nov 2025\nJun 2024 – Jan 2025\nJan 2019 – Jan 2024')).toEqual([]);
+  });
+
+  it('says nothing about ranges of a year or more', () => {
+    expect(facts('Jan 2025 – Jan 2026\nJan 2023 – Jan 2024\nJan 2021 – Jan 2022')).toEqual([]);
+  });
+
+  it('says nothing without dates', () => {
+    expect(facts('No dates here')).toEqual([]);
   });
 });
 
