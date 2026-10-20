@@ -41,26 +41,3 @@ export const ReviewSchema = z.object({
 });
 
 export type Review = z.infer<typeof ReviewSchema>;
-
-export function reviewJsonSchema(): Record<string, unknown> {
-  // The $schema key is metadata for JSON Schema tools; the model API doesn't need it.
-  const { $schema: _unused, ...schema } = z.toJSONSchema(ReviewSchema);
-  return schema;
-}
-
-export type ParseReviewResult =
-  | { success: true; data: Review }
-  | { success: false; reason: string };
-
-export function parseReview(raw: string): ParseReviewResult {
-  let json: unknown;
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    return { success: false, reason: 'The model returned text that is not valid JSON.' };
-  }
-  const result = ReviewSchema.safeParse(json);
-  return result.success
-    ? { success: true, data: result.data }
-    : { success: false, reason: z.prettifyError(result.error) };
-}

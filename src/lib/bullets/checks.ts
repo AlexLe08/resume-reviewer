@@ -75,7 +75,7 @@ export function termsNotInSources(draft: string, sources: string): string[] {
  * every entry here is a claim the checks will accept without the candidate
  * saying it, so each one has to be unarguable.
  */
-export function expandImplied(text: string): string {
+function expandImplied(text: string): string {
   let out = text;
   if (/\b(voiceover|nvda|jaws|talkback|narrator)\b/i.test(text)) out += ' screen readers';
   if (/<\/?(h[1-6]|button|nav|main|label|ul|li)>/i.test(text)) out += ' html';

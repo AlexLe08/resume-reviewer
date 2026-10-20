@@ -32,7 +32,3 @@ export type StreamEvent =
   | { type: 'reviewer_error'; reviewerId: string; message: string; retryable: boolean }
   | { type: 'done' }
   | { type: 'error'; stage: 'extract' | 'review'; message: string; retryable: boolean };
-
-export function encodeEvent(event: StreamEvent): string {
-  return `${JSON.stringify(event)}\n`;
-}

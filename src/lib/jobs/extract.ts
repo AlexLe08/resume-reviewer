@@ -64,7 +64,7 @@ export async function extractRequirements(
  * against the posting, one at a time. Streaming and the final result use the
  * same collector, so ids always agree.
  */
-export function createRequirementCollector(posting: string) {
+function createRequirementCollector(posting: string) {
   const seen = new Set<string>();
   let nextId = 1;
   return {

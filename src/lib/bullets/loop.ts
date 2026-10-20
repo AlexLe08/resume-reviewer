@@ -99,7 +99,7 @@ const JudgeSchema = z.object({
     .max(6),
 });
 
-export function allNotes(task: Pick<BulletTask, 'noteGroups'>): string[] {
+function allNotes(task: Pick<BulletTask, 'noteGroups'>): string[] {
   return task.noteGroups.flat();
 }
 

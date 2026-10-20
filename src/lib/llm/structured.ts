@@ -25,7 +25,7 @@ export interface StructuredCallOptions<T> {
 }
 
 /** JSON Schema for a provider. The $schema key is metadata the model APIs don't need. */
-export function toProviderSchema(schema: z.ZodType): Record<string, unknown> {
+function toProviderSchema(schema: z.ZodType): Record<string, unknown> {
   const { $schema: _unused, ...rest } = z.toJSONSchema(schema);
   return rest;
 }
@@ -91,7 +91,7 @@ export async function callStructured<T>(options: StructuredCallOptions<T>): Prom
   return { ok: true, data: parsed.data, call };
 }
 
-export function parseStructured<T>(
+function parseStructured<T>(
   raw: string,
   schema: z.ZodType<T>,
 ): { success: true; data: T } | { success: false; reason: string } {

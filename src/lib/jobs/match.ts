@@ -193,7 +193,7 @@ export function buildReport(
 }
 
 /** One requirement's result, checked. Shared by the streamed results and the final report. */
-export function toRequirementMatch(
+function toRequirementMatch(
   requirement: Requirement,
   result: MatchItem,
   resumeText: string,
