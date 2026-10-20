@@ -13,6 +13,31 @@ Last updated 2026-10-20. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 
 - **Phase 5 prep: a recorded demo** (DECISIONS 7.6). `LLM_PROVIDER=replay` replays real model answers for four sample resumes through the real pipeline: sample picker, banner, `/api/review` taking a `sample`. `npm run demo:record` re-records (about 20 minutes, one run per sample). A test fails when a prompt change leaves a sample without a recording. Browser-checked locally. Not deployed.
 
+## Next session: a refactor pass over the whole codebase
+
+The user wants to step back and look at the code as a whole: remove stale code, combine code where that shrinks files, without changing what the app does. Start by reading this section, then propose one area at a time with the tradeoffs (CLAUDE.md working agreement); the user reviews each diff and commits.
+
+**Ground rules**
+
+- **Behavior-preserving only.** Do not change any prompt text, persona, computed fact, review schema or sample resume. `src/lib/demo/recordings.test.ts` is the canary: a recording matches only a byte-identical prompt, so if it fails, a refactor changed a prompt. After each area run `npm test`, `npm run typecheck`, and `npm run build`; for runner scripts, `LLM_PROVIDER=mock npm run eval -- --runs 1` checks the plumbing. No real-model eval is needed for a pure refactor.
+- **Bullet checks are frozen** (rule 9): tidy them only with no change in behavior.
+- **Spikes are evidence.** `DECISIONS.md` cites them by name (6.2 tools, 7.1 proofread, the judge and bullet spikes). Retiring one is the user's call; if it goes, the DECISIONS entry should say the script was removed and keep the numbers.
+- Do not touch `fixtures/private/` or read `eval-results/` beyond what a task needs. The user adds `.env.example` lines by hand (a deny rule blocks it): `LLM_PROVIDER=replay` for the demo build is still missing there.
+
+**Inventory (2026-10-20; unverified starting points, not conclusions)**
+
+- Size: about 5,900 lines of source (not counting tests), 2,100 of tests, 1,700 in `scripts/`; 182 tracked files. Largest: `scripts/spikes/tools.ts` 443, `scripts/eval-jobs.ts` 348, `src/lib/bullets/loop.ts` 344, `src/components/BulletWriter.tsx` 295, `scripts/eval.ts` 278 (persona eval, proofreader eval and rescore in one file), `src/lib/bullets/checks.ts` 239, `src/lib/checks/timeline.ts` 238, `src/lib/jobs/match.ts` 233, `src/lib/eval/jobs.ts` 227, `src/components/ReviewWorkspace.tsx` 211.
+- **Likely dead code (highest confidence):** `encodeEvent` in `src/lib/stream/events.ts` has no uses anywhere. `parseReview` and `reviewJsonSchema` in `src/lib/review/schema.ts` are used only by `schema.test.ts` (the pipeline validates through `callStructured`), so they and their tests may go. These are exported but referenced only inside their own file, so at least the `export` can go: `expandImplied`, `allNotes` (bullets), `toRequirementMatch`, `createRequirementCollector` (jobs), `toProviderSchema`, `parseStructured` (llm). Many exported types are never imported elsewhere (leave public types unless they clutter).
+- **Duplicated boilerplate in scripts:** `process.loadEnvFile('.env.local')` with the same try/catch in 8 places; the same "make `eval-results/`, timestamped file name from provider and model, write JSON with `gitInfo`" block in `eval.ts` (twice), `eval-jobs.ts`, and three spikes; per-script `parseArgs` setup. A small shared `scripts/lib` helper would shrink all of them.
+- **Stale or decided:** `spike:tools` (443 lines, saves nothing, evidence for 6.2); `src/lib/proofread/code.ts` and the `cspell-lib` dev dependency, used only by the proofread spike's `code` and `hybrid` modes, a rejected approach (7.1), along with `alreadyFlagged` in `proofread/model.ts`; the `anonymize` feature (`src/lib/eval/anonymize.ts`, its test, `scripts/anonymize-private.ts`, the npm script), since the user ended up editing files directly. Each needs the user's decision.
+- **Cosmetic:** a mis-indented `if (values.rescore)` in `scripts/eval.ts`.
+- **README:** the "Project layout" tree and the Gemini troubleshooting notes are still from Phase 1.
+- **Possible larger wins, only if clear:** the three stream hooks (`useReviewStream`, `useMatchStream`, `useBulletStream`) and their reducers share a pattern; `ReviewWorkspace.tsx` and `BulletWriter.tsx` are large; tests repeat a fake `CallRecord`.
+
+**Suggested order:** (1) dead code and needless exports, (2) shared script helpers, (3) retire decided spikes and the cspell dependency (user decision), (4) larger component or hook merges only where the diff clearly shrinks, (5) README cleanup. Stop and show the plan before each.
+
+**Still open after that:** choosing a host for the recorded demo (Phase 5).
+
 ## Next
 
 - **Evaluation uses synthetic fixtures only** (decision, 2026-10-17): no real resume is used for evals or the proofreader check. `npm run eval` reads public fixtures only.
