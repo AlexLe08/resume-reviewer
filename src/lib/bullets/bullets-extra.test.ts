@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { editIssues } from './edit-issues';
-import { BulletRequestSchema, DEFAULT_STYLE, parseNoteGroups, parseStyle } from './request';
+import { BulletRequestSchema, DEFAULT_STYLE, isWritingStyle, parseNoteGroups, parseStyle } from './request';
+
+describe('isWritingStyle', () => {
+  it('accepts the saved shape and rejects anything else browser storage might hold', () => {
+    expect(isWritingStyle(DEFAULT_STYLE)).toBe(true);
+    expect(isWritingStyle(null)).toBe(false);
+    expect(isWritingStyle('x')).toBe(false);
+    expect(isWritingStyle({ avoidText: '', preferText: '' })).toBe(false);
+    expect(isWritingStyle({ ...DEFAULT_STYLE, noCodeSyntax: 'yes' })).toBe(false);
+  });
+});
 
 describe('parseStyle', () => {
   it('reads avoided words and replacements written either way', () => {

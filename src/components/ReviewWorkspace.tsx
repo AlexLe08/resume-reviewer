@@ -5,7 +5,7 @@ import { useBulletStream } from '@/hooks/useBulletStream';
 import { useMatchStream } from '@/hooks/useMatchStream';
 import { useReviewStream } from '@/hooks/useReviewStream';
 import { useStoredState } from '@/hooks/useStoredState';
-import { DEFAULT_STYLE, type WritingStyle } from '@/lib/bullets/request';
+import { DEFAULT_STYLE, isWritingStyle, type WritingStyle } from '@/lib/bullets/request';
 import { BulletWriterProvider } from './BulletWriter';
 import { ChecksPanel } from './ChecksPanel';
 import { DemoBanner } from './DemoBanner';
@@ -21,11 +21,6 @@ type Mode = 'review' | 'match';
 
 const STYLE_KEY = 'resume-reviewer:writing-style';
 
-function isWritingStyle(value: unknown): value is WritingStyle {
-  if (typeof value !== 'object' || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return typeof v.avoidText === 'string' && typeof v.preferText === 'string' && typeof v.noCodeSyntax === 'boolean';
-}
 const MODES: { id: Mode; label: string }[] = [
   { id: 'review', label: 'Recruiter review' },
   { id: 'match', label: 'Match to a job' },

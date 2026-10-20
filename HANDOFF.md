@@ -32,9 +32,9 @@ The user wants to step back and look at the code as a whole: remove stale code, 
 - **Stale or decided:** `spike:tools` (retired 2026-10-20, DECISIONS 6.1 keeps the numbers); the proofread spike's `code` and `hybrid` modes, `code.ts`, `alreadyFlagged` and `cspell-lib` (retired 2026-10-20, DECISIONS 7.1); the `anonymize` feature (`src/lib/eval/anonymize.ts`, its test, `scripts/anonymize-private.ts`, the npm script), since the user ended up editing files directly. It needs the user's decision.
 - **Cosmetic:** a mis-indented `if (values.rescore)` in `scripts/eval.ts`.
 - **README:** the "Project layout" tree and the Gemini troubleshooting notes are still from Phase 1.
-- **Possible larger wins, only if clear:** the three stream hooks (`useReviewStream`, `useMatchStream`, `useBulletStream`) and their reducers share a pattern; `ReviewWorkspace.tsx` and `BulletWriter.tsx` are large; tests repeat a fake `CallRecord`.
+- **Possible larger wins (step 4, reviewed 2026-10-20: nothing worth doing):** the three stream hooks already share `useNdjsonRequest`; what is left per hook is its own reducer plus about 6 lines, so merging saves under 20 lines and hides what each hook does. The fake `CallRecord` is repeated in only 2 tests, one line each. `ReviewWorkspace.tsx` and `BulletWriter.tsx` are long but coherent, and splitting them moves lines without removing any. If `ReviewWorkspace` keeps growing, pull the review tab's JSX into a `ReviewTab` component. `isWritingStyle` moved to `lib/bullets/request.ts` (done).
 
-**Suggested order:** (1) dead code and needless exports, (2) shared script helpers, (3) retire decided spikes and the cspell dependency (user decision), (4) larger component or hook merges only where the diff clearly shrinks, (5) README cleanup. Stop and show the plan before each.
+**Suggested order:** (1) dead code and needless exports, (2) shared script helpers, (3) retire decided spikes and the cspell dependency (user decision), (4) larger component or hook merges only where the diff clearly shrinks (reviewed, none), (5) README cleanup. Stop and show the plan before each.
 
 **Still open after that:** choosing a host for the recorded demo (Phase 5).
 

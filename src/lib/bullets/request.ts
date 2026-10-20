@@ -36,6 +36,13 @@ export interface WritingStyle {
 
 export const DEFAULT_STYLE: WritingStyle = { avoidText: '', preferText: '', noCodeSyntax: false };
 
+/** For reading saved settings back: browser storage can hold anything. */
+export function isWritingStyle(value: unknown): value is WritingStyle {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.avoidText === 'string' && typeof v.preferText === 'string' && typeof v.noCodeSyntax === 'boolean';
+}
+
 export function parseStyle(style: WritingStyle): { avoid: string[]; prefer: Record<string, string>; noCodeSyntax: boolean } {
   const avoid = style.avoidText
     .split(',')
