@@ -8,35 +8,23 @@ Last updated 2026-10-20. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 - **Phase 2: job matching.** Requirement extraction and matching as a workflow (beat a tool-calling agent 25/25 vs 13/25). 132/132 extraction, 132/132 matching, 89/89 grounded quotes. Streamed item by item in the app.
 - **Phase 2: bullet writer.** Evaluator–optimizer loop: up to 3 candidates from different angles, code checks, model judge, revisions, user picks. In the app from any "Partly" / "Not shown" requirement. User ratings: 0 rejected in the last two rounds.
 - **Phase 2: grouped notes** (`1988884`, DECISIONS 6.13). The user separates unrelated work with a blank line; bullets stay within one group; the judge flags links across groups. Judge: links across groups caught 4/4; correct bullets wrongly flagged 1/6 (bar was 0/6). Bullets: 12/12 runs, 36/36 candidates passing, no final combines groups. Links *within* one group are not reliably judged; the interface line tells the user to check links.
-- **Spikes save results with the commit.** `spike:bullets` and `spike:judge` write to `eval-results/` with the git commit and whether the tree was dirty (shared `gitInfo` in `src/lib/eval/git.ts`). `spike:judge` also saves each bullet's verdict and flags, and prints flag reasons. `spike:tools` still saves nothing.
+- **Spikes save results with the commit.** `spike:bullets` and `spike:judge` write to `eval-results/` with the git commit and whether the tree was dirty (shared `gitInfo` in `src/lib/eval/git.ts`). `spike:judge` also saves each bullet's verdict and flags, and prints flag reasons.
 - **Phase 3: three reviewers** (DECISIONS 7.1, 7.2). Recruiter, hiring manager and a model proofreader run one after another in one `/api/review` stream, shown as tabs with status marks; a failed reviewer shows its error on its own tab. Proofreader spike: non-words 9/9, real-word 9/13, casing 5/6, 0 false alarms on 20 trap terms, ~90 s (code spell checking was dropped). Hiring-manager eval 39/39, and it separates from the recruiter on `skills-not-shown` (verdict maybe vs yes, 3/3 each). Removing "typos" from the recruiter prompt changed nothing (49/51 before and after), and the typo expectation now lives with the proofreader.
 
 - **Phase 5 prep: a recorded demo** (DECISIONS 7.6). `LLM_PROVIDER=replay` replays real model answers for four sample resumes through the real pipeline: sample picker, banner, `/api/review` taking a `sample`. `npm run demo:record` re-records (about 20 minutes, one run per sample). A test fails when a prompt change leaves a sample without a recording. Browser-checked locally. Not deployed.
 
-## Next session: a refactor pass over the whole codebase
+## Refactor pass (done 2026-10-20)
 
-The user wants to step back and look at the code as a whole: remove stale code, combine code where that shrinks files, without changing what the app does. Start by reading this section, then propose one area at a time with the tradeoffs (CLAUDE.md working agreement); the user reviews each diff and commits.
+Behavior-preserving cleanup, one commit per step; tests, typecheck and build stayed green, and `recordings.test.ts` never failed, so no prompt changed.
 
-**Ground rules**
+- **Dead code:** removed `encodeEvent`, `parseReview`, `reviewJsonSchema` and `schema.test.ts`; un-exported six helpers used only in their own file.
+- **Script helpers:** `scripts/lib/run.ts` (`loadLocalEnv`, `saveResults`) replaces the copied env-loading and results-saving blocks. Saved file names and JSON are unchanged, so `--rescore` still works.
+- **Retired:** `spike:tools` (DECISIONS 6.1 keeps the numbers), the proofreader's code and hybrid modes with `code.ts`, `alreadyFlagged` and `cspell-lib` (DECISIONS 7.1), and `anonymize`. All are in git history. `fixtures/private/anonymize.map.json` is still there.
+- **Reviewed, not merged:** the stream hooks, the large components and the repeated test `CallRecord`. Nothing shrank enough to justify a change. If `ReviewWorkspace` keeps growing, pull the review tab's JSX into a `ReviewTab` component. `isWritingStyle` moved to `lib/bullets/request.ts`.
+- **README:** layout tree, scripts table, Gemini schema note, demo wording and eval timing fixed. Left on purpose: the repeated install steps in Getting started and "Run it yourself", and the flow diagram, which omits `proofread_done` and the demo `sample` input.
+- **Still true:** spikes are evidence (DECISIONS cites them by name), and bullet checks are frozen (CLAUDE.md rule 9).
 
-- **Behavior-preserving only.** Do not change any prompt text, persona, computed fact, review schema or sample resume. `src/lib/demo/recordings.test.ts` is the canary: a recording matches only a byte-identical prompt, so if it fails, a refactor changed a prompt. After each area run `npm test`, `npm run typecheck`, and `npm run build`; for runner scripts, `LLM_PROVIDER=mock npm run eval -- --runs 1` checks the plumbing. No real-model eval is needed for a pure refactor.
-- **Bullet checks are frozen** (rule 9): tidy them only with no change in behavior.
-- **Spikes are evidence.** `DECISIONS.md` cites them by name (6.2 tools, 7.1 proofread, the judge and bullet spikes). Retiring one is the user's call; if it goes, the DECISIONS entry should say the script was removed and keep the numbers.
-- Do not touch `fixtures/private/` or read `eval-results/` beyond what a task needs. The user adds `.env.example` lines by hand (a deny rule blocks it): `LLM_PROVIDER=replay` for the demo build is still missing there.
-
-**Inventory (2026-10-20; unverified starting points, not conclusions)**
-
-- Size: about 5,900 lines of source (not counting tests), 2,100 of tests, 1,700 in `scripts/`; 182 tracked files. Largest: `scripts/eval-jobs.ts` 348, `src/lib/bullets/loop.ts` 344, `src/components/BulletWriter.tsx` 295, `scripts/eval.ts` 278 (persona eval, proofreader eval and rescore in one file), `src/lib/bullets/checks.ts` 239, `src/lib/checks/timeline.ts` 238, `src/lib/jobs/match.ts` 233, `src/lib/eval/jobs.ts` 227, `src/components/ReviewWorkspace.tsx` 211.
-- **Likely dead code (highest confidence):** `encodeEvent` in `src/lib/stream/events.ts` has no uses anywhere. `parseReview` and `reviewJsonSchema` in `src/lib/review/schema.ts` are used only by `schema.test.ts` (the pipeline validates through `callStructured`), so they and their tests may go. These are exported but referenced only inside their own file, so at least the `export` can go: `expandImplied`, `allNotes` (bullets), `toRequirementMatch`, `createRequirementCollector` (jobs), `toProviderSchema`, `parseStructured` (llm). Many exported types are never imported elsewhere (leave public types unless they clutter).
-- **Duplicated boilerplate in scripts:** `process.loadEnvFile('.env.local')` with the same try/catch in 8 places; the same "make `eval-results/`, timestamped file name from provider and model, write JSON with `gitInfo`" block in `eval.ts` (twice), `eval-jobs.ts`, and three spikes; per-script `parseArgs` setup. A small shared `scripts/lib` helper would shrink all of them.
-- **Stale or decided:** `spike:tools` (retired 2026-10-20, DECISIONS 6.1 keeps the numbers); the proofread spike's `code` and `hybrid` modes, `code.ts`, `alreadyFlagged` and `cspell-lib` (retired 2026-10-20, DECISIONS 7.1); the `anonymize` feature (`src/lib/eval/anonymize.ts`, its test, `scripts/anonymize-private.ts`, the npm script; retired 2026-10-20, in git history). `fixtures/private/anonymize.map.json` is left in place (gitignored, yours).
-- **Cosmetic:** a mis-indented `if (values.rescore)` in `scripts/eval.ts`.
-- **README:** fixed 2026-10-20 (layout tree, scripts table, Gemini schema note, demo wording, eval timing). Left as is by choice: the repeated install steps in Getting started and "Run it yourself", and the flow diagram, which omits `proofread_done` and the demo `sample` input.
-- **Possible larger wins (step 4, reviewed 2026-10-20: nothing worth doing):** the three stream hooks already share `useNdjsonRequest`; what is left per hook is its own reducer plus about 6 lines, so merging saves under 20 lines and hides what each hook does. The fake `CallRecord` is repeated in only 2 tests, one line each. `ReviewWorkspace.tsx` and `BulletWriter.tsx` are long but coherent, and splitting them moves lines without removing any. If `ReviewWorkspace` keeps growing, pull the review tab's JSX into a `ReviewTab` component. `isWritingStyle` moved to `lib/bullets/request.ts` (done).
-
-**Suggested order:** (1) dead code and needless exports, (2) shared script helpers, (3) retire decided spikes and the cspell dependency (user decision), (4) larger component or hook merges only where the diff clearly shrinks (reviewed, none), (5) README cleanup (done). Stop and show the plan before each.
-
-**Still open after that:** choosing a host for the recorded demo (Phase 5).
+**Still open:** choosing a host for the recorded demo (Phase 5).
 
 ## Next
 
