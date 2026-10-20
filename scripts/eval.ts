@@ -9,7 +9,7 @@
  *   npm run eval -- --only recent-gap     one fixture (matches by name)
  *   LLM_PROVIDER=gemini npm run eval      override a setting for one run
  */
-import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { getEnv } from '@/lib/env';
@@ -24,14 +24,10 @@ import { formatResultLine, summarizeFlags } from '@/lib/proofread/report';
 import { PERSONAS, type PersonaId } from '@/lib/review/personas';
 import { runReview } from '@/lib/review/run';
 import type { GroundedReview } from '@/lib/review/grounding';
+import { loadLocalEnv, saveResults } from './lib/run';
 
 async function main(): Promise<void> {
-  // Settings already in the shell win over .env.local, so one-off overrides work.
-  try {
-    process.loadEnvFile('.env.local');
-  } catch {
-    // No .env.local: rely on the shell environment.
-  }
+  loadLocalEnv();
 
   const { values } = parseArgs({
     options: {
@@ -42,7 +38,7 @@ async function main(): Promise<void> {
     },
   });
 
-    if (values.rescore) {
+  if (values.rescore) {
     await rescore(path.resolve(values.rescore), process.cwd());
     return;
   }
@@ -168,10 +164,6 @@ async function main(): Promise<void> {
   console.log(formatSummary(summaries));
 
   // Results include review text quoting the resumes, so eval-results/ is gitignored.
-  const outDir = path.join(root, 'eval-results');
-  await mkdir(outDir, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const file = path.join(outDir, `${stamp}_${providerName()}_${modelName().replace(/[^a-z0-9.-]/gi, '_')}.json`);
   const meta = {
     startedAt: new Date().toISOString(),
     provider: providerName(),
@@ -180,8 +172,8 @@ async function main(): Promise<void> {
     runsPerFixture: runs,
     git,
   };
-  await writeFile(file, JSON.stringify({ meta, summaries, records }, null, 2));
-  console.log(`\nFull results: ${path.relative(root, file)}`);
+  const file = await saveResults(null, { meta, summaries, records });
+  console.log(`\nFull results: ${file}`);
 
   if (labeled.length > 0) {
     console.log('');
@@ -225,13 +217,9 @@ async function evalProofreader(labeled: LabeledResume[], root: string): Promise<
   }
 
   // Flags can quote the resumes, so this stays in gitignored eval-results/.
-  const outDir = path.join(root, 'eval-results');
-  await mkdir(outDir, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const file = path.join(outDir, `${stamp}_proofread-eval_${providerName()}_${modelName().replace(/[^a-z0-9.-]/gi, '_')}.json`);
   const meta = { startedAt: new Date().toISOString(), provider: providerName(), model: modelName(), reviewer: PROOFREADER, temperature: 0, git };
-  await writeFile(file, JSON.stringify({ meta, results }, null, 2));
-  console.log(`\nFull results: ${path.relative(root, file)}`);
+  const file = await saveResults('proofread-eval', { meta, results });
+  console.log(`\nFull results: ${file}`);
 }
 
 function fixtureSources(root: string) {

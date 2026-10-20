@@ -21,6 +21,7 @@ import { parseArgs } from 'node:util'
 import { analyzeTimeline, formatDuration } from '@/lib/checks/timeline'
 import { getEnv } from '@/lib/env'
 import { isQuoteInText, normalizeForMatch } from '@/lib/review/grounding'
+import { loadLocalEnv } from '../lib/run'
 
 type Status = 'met' | 'partial' | 'missing'
 
@@ -370,11 +371,7 @@ function parseFinal(
 }
 
 async function main(): Promise<void> {
-  try {
-    process.loadEnvFile('.env.local')
-  } catch {
-    // Rely on the shell environment.
-  }
+  loadLocalEnv()
   const { values } = parseArgs({
     options: { runs: { type: 'string', default: '5' }, mode: { type: 'string', default: 'agent' } },
   })

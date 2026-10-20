@@ -12,15 +12,12 @@ import { extractRequirements } from '@/lib/jobs/extract'
 import { matchRequirements } from '@/lib/jobs/match'
 import { TIERS, type MatchStatus } from '@/lib/jobs/schema'
 import { modelName, providerName } from '@/lib/llm'
+import { loadLocalEnv } from './lib/run'
 
 const MARK: Record<MatchStatus, string> = { met: '✓', partial: '~', missing: '✗' }
 
 async function main(): Promise<void> {
-  try {
-    process.loadEnvFile('.env.local')
-  } catch {
-    // Rely on the shell environment.
-  }
+  loadLocalEnv()
   const { values } = parseArgs({ options: { resume: { type: 'string' }, job: { type: 'string' } } })
   if (!values.resume || !values.job)
     throw new Error('Usage: npm run match -- --resume <file> --job <file>')

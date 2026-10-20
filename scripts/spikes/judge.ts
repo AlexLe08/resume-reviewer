@@ -9,7 +9,7 @@
  *   npm run spike:judge                  1 run per bullet
  *   npm run spike:judge -- --runs 3      check it's still deterministic
  */
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { taskFromFixture } from '@/lib/bullets/fixture';
@@ -17,6 +17,7 @@ import { judgeBullet, type BulletTask, type Flag } from '@/lib/bullets/loop';
 import { getEnv } from '@/lib/env';
 import { gitInfo } from '@/lib/eval/git';
 import { modelName, providerName } from '@/lib/llm';
+import { loadLocalEnv, saveResults } from '../lib/run';
 
 interface Item {
   case: string;
@@ -34,11 +35,7 @@ interface JudgeRecord extends Item {
 }
 
 async function main(): Promise<void> {
-  try {
-    process.loadEnvFile('.env.local');
-  } catch {
-    // Rely on the shell environment.
-  }
+  loadLocalEnv();
   const { values } = parseArgs({ options: { runs: { type: 'string', default: '1' } } });
   const runs = Number(values.runs);
   getEnv();
@@ -90,11 +87,8 @@ async function main(): Promise<void> {
   console.log(`  …flagged as "relationship"           ${tally.asRelationship}/${tally.positives}`);
   console.log(`  correct bullets wrongly flagged      ${tally.falseAlarms}/${tally.clean}`);
 
-  const outDir = path.join(process.cwd(), 'eval-results');
-  await mkdir(outDir, { recursive: true });
-  const file = path.join(outDir, `${new Date().toISOString().replace(/[:.]/g, '-')}_judge_${providerName()}_${modelName().replace(/[^a-z0-9.-]/gi, '_')}.json`);
-  await writeFile(file, JSON.stringify({ meta: { provider: providerName(), model: modelName(), runs, git }, tally, records }, null, 2));
-  console.log(`\nFull results: ${path.relative(process.cwd(), file)}`);
+  const file = await saveResults('judge', { meta: { provider: providerName(), model: modelName(), runs, git }, tally, records });
+  console.log(`\nFull results: ${file}`);
 }
 
 main().catch((err: unknown) => {

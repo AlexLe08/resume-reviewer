@@ -11,7 +11,6 @@
  *   npm run spike:proofread -- --only code|model|hybrid  one approach (hybrid also runs code first)
  *   npm run spike:proofread -- --show                    also print each flag (may contain resume text)
  */
-import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { getEnv } from '@/lib/env';
@@ -22,13 +21,10 @@ import { loadLabeledResume } from '@/lib/proofread/labels';
 import { runProofread } from '@/lib/proofread/model';
 import { formatResultLine as line, summarizeFlags as summarize, type ProofreadResult as Result } from '@/lib/proofread/report';
 import type { Flag } from '@/lib/proofread/score';
+import { loadLocalEnv, saveResults } from '../lib/run';
 
 async function main(): Promise<void> {
-  try {
-    process.loadEnvFile('.env.local');
-  } catch {
-    // Rely on the shell environment.
-  }
+  loadLocalEnv();
   const { values } = parseArgs({
     options: {
       fixture: { type: 'string', default: 'fixtures/typos.labels.json' },
@@ -104,11 +100,8 @@ async function main(): Promise<void> {
     }
   }
 
-  const outDir = path.join(process.cwd(), 'eval-results');
-  await mkdir(outDir, { recursive: true });
-  const file = path.join(outDir, `${new Date().toISOString().replace(/[:.]/g, '-')}_proofread_${labeled.name}_${providerName()}_${modelName().replace(/[^a-z0-9.-]/gi, '_')}.json`);
-  await writeFile(file, JSON.stringify({ meta: { provider: providerName(), model: modelName(), temperature: 0, runs, fixture: labeled.name, git }, results }, null, 2));
-  console.log(`\nFull results: ${path.relative(process.cwd(), file)}`);
+  const file = await saveResults(`proofread_${labeled.name}`, { meta: { provider: providerName(), model: modelName(), temperature: 0, runs, fixture: labeled.name, git }, results });
+  console.log(`\nFull results: ${file}`);
 }
 
 main().catch((err: unknown) => {

@@ -11,7 +11,7 @@
  *   npm run spike:bullets                    3 runs per case
  *   npm run spike:bullets -- --only footer --runs 2
  */
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { extractNumbers, stems } from '@/lib/bullets/checks';
@@ -20,6 +20,7 @@ import { improveBullet, sourcesText, type BulletTask, type LoopResult } from '@/
 import { getEnv } from '@/lib/env';
 import { gitInfo } from '@/lib/eval/git';
 import { modelName, providerName } from '@/lib/llm';
+import { loadLocalEnv, saveResults } from '../lib/run';
 
 interface Case extends BulletTask {
   name: string;
@@ -72,11 +73,7 @@ function maxOverlap(bullets: string[]): number {
 }
 
 async function main(): Promise<void> {
-  try {
-    process.loadEnvFile('.env.local');
-  } catch {
-    // Rely on the shell environment.
-  }
+  loadLocalEnv();
   const { values } = parseArgs({ options: { runs: { type: 'string', default: '3' }, only: { type: 'string' } } });
   const runs = Number(values.runs);
   getEnv();
@@ -143,11 +140,8 @@ async function main(): Promise<void> {
     console.log(`    time per run (median)      ${(times[Math.floor(times.length / 2)] ?? 0).toFixed(1)} s`);
   }
 
-  const outDir = path.join(root, 'eval-results');
-  await mkdir(outDir, { recursive: true });
-  const file = path.join(outDir, `${new Date().toISOString().replace(/[:.]/g, '-')}_bullets_${providerName()}_${modelName().replace(/[^a-z0-9.-]/gi, '_')}.json`);
-  await writeFile(file, JSON.stringify({ meta: { provider: providerName(), model: modelName(), runs, git }, records }, null, 2));
-  console.log(`\nFull results: ${path.relative(root, file)}`);
+  const file = await saveResults('bullets', { meta: { provider: providerName(), model: modelName(), runs, git }, records });
+  console.log(`\nFull results: ${file}`);
 }
 
 main().catch((err: unknown) => {

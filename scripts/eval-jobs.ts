@@ -10,7 +10,7 @@
  *   npm run eval:jobs -- --stage both
  *   npm run eval:jobs -- --only job-1 --runs 5
  */
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { getEnv } from '@/lib/env'
@@ -31,6 +31,7 @@ import { matchRequirements } from '@/lib/jobs/match'
 import { modelName, providerName } from '@/lib/llm'
 import type { ExtractedDocument } from '@/lib/pdf/extract'
 import { TIERS, type MatchReport, type Requirement } from '@/lib/jobs/schema'
+import { loadLocalEnv, saveResults } from './lib/run'
 
 type Stage = 'extract' | 'match' | 'both'
 
@@ -62,11 +63,7 @@ function jobFixtureSources(root: string) {
 }
 
 async function main(): Promise<void> {
-  try {
-    process.loadEnvFile('.env.local')
-  } catch {
-    // Rely on the shell environment.
-  }
+  loadLocalEnv()
   const { values } = parseArgs({
     options: {
       runs: { type: 'string', default: '3' },
@@ -196,13 +193,6 @@ async function main(): Promise<void> {
       )
   }
 
-  const outDir = path.join(root, 'eval-results')
-  await mkdir(outDir, { recursive: true })
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const file = path.join(
-    outDir,
-    `${stamp}_jobs-${stage}_${providerName()}_${modelName().replace(/[^a-z0-9.-]/gi, '_')}.json`
-  )
   const meta = {
     startedAt: new Date().toISOString(),
     provider: providerName(),
@@ -211,8 +201,8 @@ async function main(): Promise<void> {
     runsPerFixture: runs,
     git,
   }
-  await writeFile(file, JSON.stringify({ meta, extractRecords, matchRecords }, null, 2))
-  console.log(`\nFull results: ${path.relative(root, file)}`)
+  const file = await saveResults(`jobs-${stage}`, { meta, extractRecords, matchRecords })
+  console.log(`\nFull results: ${file}`)
 }
 
 function printExtraction(fixture: JobFixture, records: ExtractRecord[]): void {

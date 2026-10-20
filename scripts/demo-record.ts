@@ -18,13 +18,10 @@ import { getEnv } from '@/lib/env';
 import { modelName, providerName } from '@/lib/llm';
 import { REVIEWERS, runReviewers } from '@/lib/review/reviewers';
 import type { StreamEvent } from '@/lib/stream/events';
+import { loadLocalEnv } from './lib/run';
 
 async function main(): Promise<void> {
-  try {
-    process.loadEnvFile('.env.local');
-  } catch {
-    // Rely on the shell environment.
-  }
+  loadLocalEnv();
   const { values } = parseArgs({ options: { only: { type: 'string' } } });
 
   const provider = process.env.LLM_PROVIDER ?? 'ollama';
