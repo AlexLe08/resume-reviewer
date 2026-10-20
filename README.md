@@ -78,7 +78,6 @@ Notes:
 | `npm run eval:jobs` | Job-matching evals (see [Job matching evals](#job-matching-evals)) |
 | `npm run match` | One job match in the terminal (see [Job matching](#job-matching-phase-2)) |
 | `npm run spike:bullets`, `spike:judge`, `spike:proofread` | Measurement scripts for the bullet loop, its judge and the proofreader; results go to `eval-results/` |
-| `npm run anonymize` | Replace names in `fixtures/private/` from a map (dry run unless `-- --write`) |
 
 ## How a review flows
 
