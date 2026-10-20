@@ -13,7 +13,7 @@ export const DEMO_TODAY = new Date('2026-10-20T12:00:00Z');
 export interface DemoSample {
   id: string;
   title: string;
-  /** One line on what the sample shows. */
+  /** One line on what the resume contains. It must not promise what the reviewers will say: each recording is a single real run. */
   blurb: string;
   /** A public synthetic resume in fixtures/. Never a private one. */
   file: string;
@@ -23,25 +23,25 @@ export const DEMO_SAMPLES: readonly DemoSample[] = [
   {
     id: 'strong-frontend',
     title: 'A strong frontend resume',
-    blurb: 'Specific, quantified bullets. The reviewers should lean positive without inventing problems.',
+    blurb: 'Specific, quantified bullets.',
     file: 'strong-frontend.txt',
   },
   {
     id: 'weak-duties',
     title: 'A resume that lists duties',
-    blurb: 'Responsibilities with no results, and a typo for the proofreader to catch.',
+    blurb: 'Responsibilities with no results, and a typo.',
     file: 'weak-duties.txt',
   },
   {
     id: 'skills-not-shown',
     title: 'Skills that no bullet uses',
-    blurb: 'A senior title over assisting-level work. The recruiter and the hiring manager see it differently.',
+    blurb: 'A senior title over assisting-level work, with skills that no bullet uses.',
     file: 'skills-not-shown.txt',
   },
   {
     id: 'wrong-specialty',
     title: 'Strong work, wrong specialty',
-    blurb: 'A data engineer whose summary says frontend. Shows the verdict cap note.',
+    blurb: 'Data engineering experience under a summary that says frontend.',
     file: 'wrong-specialty.txt',
   },
 ];

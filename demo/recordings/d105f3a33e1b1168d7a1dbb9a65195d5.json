@@ -1,0 +1,12 @@
+{
+  "key": "d105f3a33e1b1168d7a1dbb9a65195d5",
+  "model": "gemma4:e4b-it-q4_K_M",
+  "recordedAt": "2026-10-20T18:20:00.254Z",
+  "latencyMs": 99679,
+  "usage": {
+    "inputTokens": 905,
+    "outputTokens": 1340,
+    "thinkingTokens": 0
+  },
+  "text": "{\n  \"summary\": \"This resume presents a candidate with recent, relevant experience as a Web Developer, but it fails to demonstrate impact or scope. The bullet points are purely descriptive of duties rather than showcasing achievements, making it difficult to assess the candidate's true capabilities.\",\n  \"wouldAdvance\": \"maybe\",\n  \"strengths\": [\n    {\n      \"point\": \"The candidate has current, relevant experience in web development.\",\n      \"evidence\": \"Web Developer | Lakeside Insurance | Jan 2021 – Present\"\n    },\n    {\n      \"point\": \"The resume lists a foundational set of technical skills.\",\n      \"evidence\": \"HTML, CSS, JavaScript, jQuery\"\n    }\n  ],\n  \"issues\": [\n    {\n      \"severity\": \"high\",\n      \"problem\": \"The objective is generic and does not define a specific career goal or value proposition.\",\n      \"evidence\": \"Hard working and motivated individual looking for a challenging position where I can grow my skills.\",\n      \"suggestion\": \"Replace the objective with a professional summary that highlights specific technical skills and years of experience.\"\n    },\n    {\n      \"severity\": \"high\",\n      \"problem\": \"The work experience lists duties instead of quantifiable outcomes or achievements.\",\n      \"evidence\": \"Responsible for working on the company website.\",\n      \"suggestion\": \"Rewrite bullet points to focus on impact, using metrics (e.g., 'Improved load time by 20%' or 'Managed 5 key features').\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"problem\": \"The scope of work is undefined, making it impossible to judge the complexity of the projects.\",\n      \"evidence\": \"Developped new pages when needed.\",\n      \"suggestion\": \"Specify the scale of the development (e.g., 'Developed 15 new pages for the corporate site').\"\n    },\n    {\n      \"severity\": \"medium\",\n      \"problem\": \"Technical skills are listed but are not supported or demonstrated in the work experience section.\",\n      \"evidence\": \"HTML, CSS, JavaScript, jQuery\",\n      \"suggestion\": \"Integrate the use of these skills into the work experience bullet points to provide context.\"\n    }\n  ]\n}"
+}

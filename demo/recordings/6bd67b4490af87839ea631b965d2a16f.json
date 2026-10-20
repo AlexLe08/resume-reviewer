@@ -1,0 +1,12 @@
+{
+  "key": "6bd67b4490af87839ea631b965d2a16f",
+  "model": "gemma4:e4b-it-q4_K_M",
+  "recordedAt": "2026-10-20T18:34:08.877Z",
+  "latencyMs": 34356,
+  "usage": {
+    "inputTokens": 745,
+    "outputTokens": 543,
+    "thinkingTokens": 0
+  },
+  "text": "{\"findings\":[]}"
+}

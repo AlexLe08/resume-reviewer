@@ -1,0 +1,12 @@
+{
+  "key": "8c02a7e072aa15991e0f28d94e1d1092",
+  "model": "gemma4:e4b-it-q4_K_M",
+  "recordedAt": "2026-10-20T18:28:57.329Z",
+  "latencyMs": 106804,
+  "usage": {
+    "inputTokens": 1157,
+    "outputTokens": 1494,
+    "thinkingTokens": 0
+  },
+  "text": "{\n  \"summary\": \"This is a strong profile for a Senior Frontend Engineer, demonstrating clear ownership and measurable impact across performance, accessibility, and architecture. The candidate consistently frames their work in terms of business outcomes and technical scale, which is highly impressive.\",\n  \"wouldAdvance\": \"yes\",\n  \"strengths\": [\n    {\n      \"point\": \"Demonstrated ability to drive significant business impact through technical execution.\",\n      \"evidence\": \"Led the rebuild of the booking flow in React and TypeScript, cutting checkout abandonment from 38% to 27% over two quarters.\"\n    },\n    {\n      \"point\": \"Proven experience in architectural scaling and code standardization.\",\n      \"evidence\": \"Introduced a shared component library adopted by 9 product teams, reducing duplicate UI code by roughly 40%.\"\n    },\n    {\n      \"point\": \"Strong focus on web performance optimization and technical trade-offs.\",\n      \"evidence\": \"Reduced median mobile page load from 4.1 s to 2.3 s by splitting bundles and moving image resizing to the CDN.\"\n    },\n    {\n      \"point\": \"Deep domain knowledge in accessibility and quality assurance.\",\n      \"evidence\": \"Partnered with design to fix 120+ accessibility issues, reaching WCAG 2.1 AA on all checkout pages.\"\n    },\n    {\n      \"point\": \"Experience leading and mentoring junior team members.\",\n      \"evidence\": \"Mentored 4 junior engineers; two were promoted within 18 months.\"\n    }\n  ],\n  \"issues\": [\n    {\n      \"severity\": \"low\",\n      \"problem\": \"The earliest role lacks technical detail, making it difficult to gauge the depth of foundational skills.\",\n      \"evidence\": \"Delivered 14 marketing sites for clients using React and headless CMS integrations.\",\n      \"suggestion\": \"If possible, add one bullet point detailing a specific technical challenge or complexity encountered in the Fabrikam Agency role.\"\n    }\n  ]\n}"
+}

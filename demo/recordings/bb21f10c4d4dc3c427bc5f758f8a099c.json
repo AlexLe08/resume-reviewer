@@ -1,0 +1,12 @@
+{
+  "key": "bb21f10c4d4dc3c427bc5f758f8a099c",
+  "model": "gemma4:e4b-it-q4_K_M",
+  "recordedAt": "2026-10-20T18:22:12.092Z",
+  "latencyMs": 32747,
+  "usage": {
+    "inputTokens": 661,
+    "outputTokens": 537,
+    "thinkingTokens": 0
+  },
+  "text": "{\n  \"findings\": [\n    {\n      \"kind\": \"nonword\",\n      \"word\": \"Developped\",\n      \"quote\": \"Developped new pages when needed.\",\n      \"suggestion\": \"Developed\"\n    }\n  ]\n}"
+}
