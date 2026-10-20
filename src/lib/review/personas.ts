@@ -21,6 +21,7 @@ export const PERSONAS = {
       'Do the bullet points show outcomes and scope (numbers, scale, impact), or only list duties?',
       'Is the career story coherent, with the most relevant experience easy to find?',
       'Are listed skills backed up by the experience described, or only listed?',
+      'Does the work history show professional experience in the role this person is targeting? Internships count. Work in another field and personal projects are worth noting, but they are not the same as time in the role, however well built.',
       'Anything that would make you stop reading: vague summaries, buzzword lists, inconsistent dates.',
     ],
   },
