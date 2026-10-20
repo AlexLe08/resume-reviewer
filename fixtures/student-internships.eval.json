@@ -28,9 +28,7 @@
           "hop*",
           "unstab*",
           "stability",
-          "turnover",
-          "short tenure*",
-          "short stint*"
+          "turnover"
         ]
       }
     ]
@@ -63,9 +61,7 @@
             "hop*",
             "unstab*",
             "stability",
-            "turnover",
-            "short tenure*",
-            "short stint*"
+            "turnover"
           ]
         }
       ]
