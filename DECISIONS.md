@@ -337,11 +337,22 @@ Median time per review: ~78–86 s
 - **Label fix (rule 10):** the one hiring-manager miss on `student-internships` was a low issue calling the experience "internship-based and short-term" with the suggestion "add weight to the short tenure"; the verdict stayed "yes". The fixture's rule is job-hopping language, so the keywords `short tenure*` and `short stint*` (which just describe an internship) were removed, leaving `hop*`, `unstab*`, `stability`, `turnover`. Verified with `--rescore` on both result files: exactly that one check flipped (fail to pass), nothing else changed.
 - **Cost, stated plainly:** ungrounded quotes were **18 of 412 (4.4%)**, against 5 of 380 (1.3%) in the run before. Five come from the fact itself: four quotes that stitched its date ranges into one, one that quoted the fact's own sentence as resume text (the open "fact quoted as resume text" item). The other 13 are the usual kind (skills lines quoted with a "SKILLS:" prefix, stitched headers), also higher than before, so some of the rise is not from this change. The panel already marks an unfound quote, so a user sees the warning. Kept: the target is met with no verdict collateral. Not fixed; if the fact-caused share grows, the fix is to stop quoting ranges in the fact, as a separate change.
 
+### 7.5 A prompt line for the career changer: no effect, reverted
+
+- **Problem:** the recruiter says "yes" on `career-changer` (a teaching career, two detailed projects, no engineering title) in most runs, even though it names the missing professional experience 3/3. Code can't tell a teaching job from an engineering one, so no fact applies.
+- **Change (one, recruiter only):** a sixth focus item: "Does the work history show professional experience in the role this person is targeting? Internships count. Work in another field and personal projects are worth noting, but they are not the same as time in the role, however well built." (`b6a2a4c`.)
+- **Bar (set before the run):** `career-changer` verdict maybe or no in at least 2 of 3 runs; `student-internships` stays yes or maybe 3/3 without job-hopping language; no recruiter check that passed before may fail; ungrounded quotes no worse. Revert if the target is not clearly met.
+- **First run** (`b6a2a4c`, 3 runs): target met at 2/3, counter-fixture clean, but two checks that were 3/3 dropped to 2/3 (`short-tenures` verdict, `career-changer` "mentions no engineering experience"), 90/93 overall.
+- **Rule-4 comparison, 5 runs each on both fixtures, before (`07cee5d`) and after (`b6a2a4c`): identical.** `career-changer` verdict maybe or no 1/5 in both; "mentions no engineering experience" 4/5 in both; `short-tenures` verdict no or maybe 3/5 in both; 23/30 checks both. The 2/3 and the two drops were run-to-run noise; the wording changed nothing measurable.
+- **Decision:** reverted. A prompt line with no measured effect only adds length. `career-changer` stays open: the recruiter's "yes" is defensible for an entry-level target, and neither code (no computable fact) nor a prompt line moved it. What remains is a label question for the user: whether "yes" is the right recruiter answer there.
+- **Correction to 7.4:** the recruiter's `short-tenures` verdict with the tenure fact is no or maybe in about 3 of 5 runs at both commits (3/3 and 2/3 in the full runs). Pooled that is roughly 8 of 11, against 0/3 and 1/3 without the fact. The fact helps but is not reliable, and the 3/3 recorded in 7.4 was a favourable draw.
+
 ---
 
 ## 8. Open items
 
 - **Proofreader on realistic text:** measured only on synthetic fixtures (real-word recall 2/5 and 7/8), by decision (7.2). More synthetic fixtures with harder real-word errors would be the way to tighten the estimate.
+- **Recruiter on `career-changer`:** "yes" in about 4 of 5 runs against a label of maybe or no. Not moved by a computed fact (none exists) or by a prompt line (7.5). Needs a decision on the label.
 - **Hiring manager vs recruiter:** separated on verdict by `skills-not-shown` (7.2) but not by four more fixtures (7.3): the verdict doesn't follow the reviews' own issue list. Open: whether to cap the verdict by issue severity in code.
 - **Links within one group** are not reliably judged (1 catch, 2 misses, 1 false alarm on a correct two-step inference). Covered by the interface line; one example each, so no fix yet (6.13).
 - **A revision can restate a flagged link** with a number, and the judge then passes it, because each round is judged without earlier flags (seen once, 6.13). If it repeats, carry relationship flags forward.
