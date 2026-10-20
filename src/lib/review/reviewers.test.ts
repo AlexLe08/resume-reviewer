@@ -51,6 +51,14 @@ describe('runReviewers', () => {
     expect(events.map((e) => e.type)).toEqual(['review_started']);
   });
 
+  it('passes a fixed date to every reviewer, so recorded prompts keep matching', async () => {
+    const seen: (Date | undefined)[] = [];
+    const spy: Reviewer = { id: 's', name: 's', kind: 'proofread', async run(_doc, options) { seen.push(options.today); return ok; } };
+    const fixed = new Date('2026-10-20T12:00:00Z');
+    await runReviewers(doc, [spy, spy], () => {}, undefined, fixed);
+    expect(seen).toEqual([fixed, fixed]);
+  });
+
   it('does not start a reviewer once the request is canceled', async () => {
     const controller = new AbortController();
     controller.abort();

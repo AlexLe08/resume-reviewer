@@ -12,8 +12,15 @@ export type ReviewerResult =
   | { ok: false; kind: 'aborted' }
   | { ok: false; kind: 'error'; message: string; retryable: boolean };
 
+export interface ReviewerRunOptions {
+  signal?: AbortSignal;
+  onDelta?: (text: string) => void;
+  /** Defaults to now. The demo passes a fixed date so its recorded prompts keep matching. */
+  today?: Date;
+}
+
 export interface Reviewer extends ReviewerInfo {
-  run(doc: ExtractedDocument, options: { signal?: AbortSignal; onDelta?: (text: string) => void }): Promise<ReviewerResult>;
+  run(doc: ExtractedDocument, options: ReviewerRunOptions): Promise<ReviewerResult>;
 }
 
 /**
@@ -65,12 +72,14 @@ export async function runReviewers(
   reviewers: readonly Reviewer[],
   send: (event: StreamEvent) => void,
   signal?: AbortSignal,
+  today?: Date,
 ): Promise<void> {
   for (const reviewer of reviewers) {
     if (signal?.aborted) return;
     send({ type: 'review_started', reviewerId: reviewer.id });
     const result = await reviewer.run(doc, {
       signal,
+      today,
       onDelta: (text) => send({ type: 'review_delta', reviewerId: reviewer.id, text }),
     });
 

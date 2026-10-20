@@ -16,7 +16,8 @@
     "spike:bullets": "tsx scripts/spikes/bullets.ts",
     "spike:judge": "tsx scripts/spikes/judge.ts",
     "spike:proofread": "tsx scripts/spikes/proofread.ts",
-    "anonymize": "tsx scripts/anonymize-private.ts"
+    "anonymize": "tsx scripts/anonymize-private.ts",
+    "demo:record": "tsx scripts/demo-record.ts"
   },
   "dependencies": {
     "@google/genai": "^1.20.0",
