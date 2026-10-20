@@ -3,6 +3,7 @@ export type ProviderErrorCode =
   | 'model_not_found'
   | 'structured_output_unsupported'
   | 'bad_response'
+  | 'no_recording'
   | 'http';
 
 /**

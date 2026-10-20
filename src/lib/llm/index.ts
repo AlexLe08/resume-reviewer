@@ -4,6 +4,7 @@ import { ProviderError } from './errors';
 import { streamStructuredGemini } from './gemini';
 import { createMockProvider } from './mock';
 import { createOllamaProvider } from './ollama';
+import { createReplayProvider, withRecording } from './replay';
 import { errorStatus, withRetry } from './retry';
 import type { StreamChunk, StructuredStreamRequest } from './types';
 import type { Prices } from './usage';
@@ -19,6 +20,14 @@ type Provider = (request: StructuredStreamRequest) => AsyncGenerator<StreamChunk
  * knows which provider answered.
  */
 function getProvider(env: Env): Provider {
+  const provider = getBaseProvider(env);
+  // Recording wraps a real provider only: replaying and re-recording the same answers would be pointless.
+  return env.LLM_RECORD_TO && env.LLM_PROVIDER !== 'replay' && env.LLM_PROVIDER !== 'mock'
+    ? withRecording(provider, env.LLM_RECORD_TO)
+    : provider;
+}
+
+function getBaseProvider(env: Env): Provider {
   switch (env.LLM_PROVIDER) {
     case 'gemini':
       return streamStructuredGemini;
@@ -33,6 +42,8 @@ function getProvider(env: Env): Provider {
         delayMs: env.MOCK_DELAY_MS,
         respond: (request) => buildMockReview(request.user),
       });
+    case 'replay':
+      return createReplayProvider({ dir: env.LLM_RECORDINGS_DIR, delayMs: env.MOCK_DELAY_MS });
   }
 }
 
@@ -63,6 +74,8 @@ export function modelName(): string {
       return env.OLLAMA_MODEL;
     case 'mock':
       return 'mock';
+    case 'replay':
+      return 'replay';
   }
 }
 
@@ -77,7 +90,8 @@ export function currentPrices(): Prices {
 export function describeLlmError(err: unknown): { message: string; retryable: boolean } {
   // Our own provider errors already carry an actionable message.
   if (err instanceof ProviderError) {
-    const permanent = err.code === 'model_not_found' || err.code === 'structured_output_unsupported';
+    const permanent =
+      err.code === 'model_not_found' || err.code === 'structured_output_unsupported' || err.code === 'no_recording';
     return { message: err.message, retryable: !permanent };
   }
 

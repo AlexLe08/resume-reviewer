@@ -3,7 +3,7 @@ import { z } from 'zod';
 const EnvSchema = z
   .object({
     /** Which model provider handles reviews. See README "Model providers". */
-    LLM_PROVIDER: z.enum(['ollama', 'gemini', 'mock']).default('ollama'),
+    LLM_PROVIDER: z.enum(['ollama', 'gemini', 'mock', 'replay']).default('ollama'),
 
     // 127.0.0.1 rather than "localhost": Node can resolve localhost to the IPv6
     // address ::1, while Ollama listens on IPv4 by default.
@@ -17,6 +17,11 @@ const EnvSchema = z
 
     /** Pause between streamed chunks from the mock provider, to make streaming visible. */
     MOCK_DELAY_MS: z.coerce.number().int().nonnegative().default(25),
+
+    /** Where `replay` reads recorded model answers from. */
+    LLM_RECORDINGS_DIR: z.string().min(1).default('demo/recordings'),
+    /** When set, answers from a real provider are also saved here (`npm run demo:record`). */
+    LLM_RECORD_TO: z.string().min(1).optional(),
 
     LLM_INPUT_PRICE_PER_MTOK: z.coerce.number().nonnegative().default(0),
     LLM_OUTPUT_PRICE_PER_MTOK: z.coerce.number().nonnegative().default(0),
