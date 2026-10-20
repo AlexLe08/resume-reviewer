@@ -7,7 +7,7 @@ Shows job seekers two things about their resume:
 
 It also matches a resume to a job posting and helps write honest bullets from your own notes. Behavior is measured with evals (`DECISIONS.md` is the log of what was tried and why).
 
-**Want to see it without installing anything?** The demo build replays recorded reviews for four sample resumes. See [Demo build](#demo-build-and-running-it-yourself).
+**Want to try it without a model?** The demo build replays recorded reviews for four sample resumes. It runs locally for now (no host yet). See [Demo build](#demo-build-and-running-it-yourself).
 
 ## Getting started
 
@@ -74,6 +74,11 @@ Notes:
 | `npm run typecheck` | Type-check without building |
 | `npm run build` | Production build |
 | `npm run demo:record` | Re-record the demo's sample reviews with the local model |
+| `npm run eval` | Review evals on the public fixtures (see [Evals](#evals)) |
+| `npm run eval:jobs` | Job-matching evals (see [Job matching evals](#job-matching-evals)) |
+| `npm run match` | One job match in the terminal (see [Job matching](#job-matching-phase-2)) |
+| `npm run spike:bullets`, `spike:judge`, `spike:proofread` | Measurement scripts for the bullet loop, its judge and the proofreader; results go to `eval-results/` |
+| `npm run anonymize` | Replace names in `fixtures/private/` from a map (dry run unless `-- --write`) |
 
 ## How a review flows
 
@@ -100,24 +105,33 @@ The response is newline-delimited JSON (NDJSON). Event types are defined once in
 ```
 src/
   app/
-    api/review/route.ts     The only API endpoint
+    api/                    review, match and bullets routes (all stream NDJSON)
     layout.tsx, page.tsx, globals.css
   components/               UI (ReviewWorkspace is the client entry point)
-  hooks/useReviewStream.ts  Fetch + stream reading + a pure state reducer
+  hooks/                    One hook per stream (review, match, bullets) over useNdjsonRequest; pure reducers
   lib/
-    checks/                 Deterministic resume checks (no LLM)
-    llm/                    Provider boundary: gemini.ts, ollama.ts, mock.ts, plus retry + usage
+    bullets/                Bullet writer: code checks, then the draft → check → judge → revise loop
+    checks/                 Deterministic resume checks and the timeline (no LLM)
+    demo/                   The demo's sample resumes
+    eval/                   Fixtures, assertions and reports for the evals
+    http/                   Shared route helpers
+    jobs/                   Requirement extraction and matching
+    llm/                    Provider boundary: gemini.ts, ollama.ts, mock.ts, replay.ts, plus structured calls, retry and usage
     pdf/                    Text extraction
-    review/                 Personas, prompt, output schema, grounding check, mock review
-    stream/                 NDJSON protocol types + reader
+    proofread/              The proofreader: model call, labels format, scoring
+    review/                 Personas, prompt, output schema, grounding check, reviewers
+    stream/                 NDJSON protocol types + readers
     env.ts                  Validated config
+demo/recordings/            Recorded model answers for the demo build
+fixtures/                   Public synthetic fixtures (fixtures/private/ is gitignored)
+scripts/                    Eval runners, match CLI, spikes, demo recorder
 ```
 
 ## Design decisions
 
 - **Deterministic before LLM.** Anything checkable with plain code is checked with plain code: free, instant, repeatable.
 - **One schema, two jobs.** `ReviewSchema` (Zod) becomes the JSON Schema sent to the model *and* validates the response.
-- **Evidence quotes.** Every strength and issue must quote the resume. This grounds feedback and lets a future eval verify quotes actually appear in the text.
+- **Evidence quotes.** Every strength and issue must quote the resume. This grounds feedback, and the evals check that quotes actually appear in the text.
 - **Provider boundary.** App code imports `@/lib/llm`, never a provider directly. `lib/llm/index.ts` is the only file that maps config to a provider; retries, logging, and grounding checks work the same for all of them.
 - **Grounding check.** Every evidence quote is checked against the extracted text in code. Quotes that don't appear are shown with a warning, and each review logs a `review_grounding` line with the counts.
 - **Resume text is untrusted.** It's wrapped in delimiters, stripped of delimiter look-alikes, and the model is told to report embedded instructions rather than follow them.
@@ -137,7 +151,7 @@ With `LLM_PROVIDER=ollama`, resumes never leave your machine. With `LLM_PROVIDER
 - **"Ollama doesn't have the model".** Run the `ollama pull` command shown in the error.
 - **Settings change had no effect.** Restart `npm run dev`.
 - **"rate limit" errors.** The free tier caps requests per minute and per day. Wait and retry.
-- **API rejects the response schema.** Gemini supports a subset of JSON Schema. Check `reviewJsonSchema()` output (e.g. `additionalProperties`) against the current Gemini structured-output docs.
+- **API rejects the response schema.** Gemini supports a subset of JSON Schema. Check the schema `toProviderSchema()` in `src/lib/llm/structured.ts` produces (e.g. `additionalProperties`) against the current Gemini structured-output docs.
 - **Model not found.** Model names change. Check AI Studio for current free-tier models and update `GEMINI_MODEL`.
 - **PDF can't be read.** Password-protected and some malformed PDFs fail extraction. Scanned PDFs extract but contain almost no text; the "Selectable text" check flags that.
 
@@ -165,7 +179,7 @@ Keywords match whole words, case-insensitively; end one with `*` to match a pref
 
 Evals use public synthetic fixtures only (`fixtures/*.eval.json`). Results are written to `eval-results/` (gitignored) with the git commit, so you can compare numbers before and after a prompt change. Plain `npm run eval` runs the recruiter, then the proofreader on `fixtures/*.labels.json`; `--persona hiring-manager` runs one persona.
 
-On a local 8B model, expect about 90 seconds per review: 5 fixtures × 3 runs is roughly 20 minutes.
+On a local 8B model, expect about 90 seconds per review per persona, so a full run over every fixture takes a long time (tens of minutes). Try `--runs 1` or `--only` first.
 
 ## Job matching (Phase 2)
 
