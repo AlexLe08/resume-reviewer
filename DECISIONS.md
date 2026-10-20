@@ -182,7 +182,7 @@ Median time per review: ~78–86 s
 
 ## 6. Phase 2: job matching and the bullet writer
 
-### 6.1 Spike: can the local model drive a tool loop? (`scripts/spikes/tools.ts`)
+### 6.1 Spike: can the local model drive a tool loop? (`scripts/spikes/tools.ts`, removed 2026-10-20: the numbers below are the record; the script is in git history)
 
 - Requirements worded like the resume: 5/5 runs finished, 20/20 verdicts, 15/15 evidence from tools, 0 invalid calls, median 43 s. **Mechanics: yes.**
 - Requirements worded like real postings (synonyms): 17/25. The search tool matched *any* word, so "design system" returned an unrelated accessibility line; the model treated it as a weak match and rarely searched again (1 retry after 5 empty searches).

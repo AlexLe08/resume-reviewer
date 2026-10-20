@@ -18,7 +18,7 @@ Resume Reviewer: a Next.js + TypeScript app that shows what a parser extracts fr
 | `npm run eval -- --rescore <file>`                                           | Re-apply current expectations to saved results, no model calls                                                         |
 | `npm run eval:jobs -- --stage extract\|match\|both`                          | Job-matching evals; also `--only`, `--runs`, `--rescore`                                                               |
 | `npm run match -- --resume <pdf> --job <txt>`                                | One job match in the terminal                                                                                          |
-| `npm run spike:bullets` / `npm run spike:judge` / `npm run spike:tools`      | Bullet-loop, judge and tool-use spikes                                                                                 |
+| `npm run spike:bullets` / `npm run spike:judge`                              | Bullet-loop and judge spikes                                                                                           |
 | `npm run spike:proofread -- --fixture <labels> --only code\|model\|hybrid --show` | Proofreader scored on a `*.labels.json` file; `--show` prints flags (may contain resume text)                  |
 | `npm run anonymize` / `npm run anonymize -- --write`                         | Replace names in `fixtures/private/` and listed tracked files from `fixtures/private/anonymize.map.json`; dry run by default, prints counts only |
 | `npm run demo:record` / `-- --only <sample>` | Record real model answers for the demo's four samples into `demo/recordings` (about 20 minutes; a full run clears the folder first). Needed after any prompt, persona, fact, schema or sample change |
