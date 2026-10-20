@@ -3,9 +3,11 @@
 Shows job seekers two things about their resume:
 
 1. **What a parser sees.** The plain text software extracts from the PDF, plus deterministic checks (selectable text, contact info, standard sections, length).
-2. **How reviewers read it.** Structured feedback from reviewer personas, with every point backed by a quote from the resume.
+2. **How reviewers read it.** Three reviewers: a recruiter, a hiring manager and a proofreader. Every point is backed by a quote from the resume, checked in code.
 
-Phase 1 ships one reviewer (Recruiter). More personas, job-description matching, and evals come in later phases.
+It also matches a resume to a job posting and helps write honest bullets from your own notes. Behavior is measured with evals (`DECISIONS.md` is the log of what was tried and why).
+
+**Want to see it without installing anything?** The demo build replays recorded reviews for four sample resumes. See [Demo build](#demo-build-and-running-it-yourself).
 
 ## Getting started
 
@@ -28,6 +30,7 @@ Set `LLM_PROVIDER` in `.env.local`:
 | `ollama` (default) | Day-to-day development and evals. Free, private, no rate limits | Ollama running locally, model pulled |
 | `gemini` | Comparing against a hosted model | `GEMINI_API_KEY` ([AI Studio](https://aistudio.google.com)) |
 | `mock` | UI work. Instant, canned review, no model | Nothing |
+| `replay` | The demo build: plays back recorded real answers for the sample resumes | The files in `demo/recordings` |
 
 ### Ollama setup (macOS)
 
@@ -45,6 +48,24 @@ Notes:
 - The first request after starting Ollama loads the model into memory and is slow. Later ones are faster until Ollama unloads it after a few idle minutes.
 - To try another model: `ollama pull <name>`, set `OLLAMA_MODEL`, restart the dev server. Compare models with the "Quotes found in resume" number, not by feel.
 
+## Demo build and running it yourself
+
+**Run it yourself (the full app, your own resume, nothing leaves your computer):**
+
+1. Install [Ollama](https://ollama.com), then `ollama pull gemma4:e4b-it-q4_K_M` (see the setup notes above, including the GGUF tag).
+2. `npm install`, copy the example settings to `.env.local`, then `npm run dev`.
+3. Open http://localhost:3000, choose a PDF and review it. A full review takes about 4-5 minutes on a 16 GB Mac: the three reviewers run one after another on a small local model.
+4. Without a model, `LLM_PROVIDER=mock npm run dev` gives instant canned reviews for working on the UI.
+
+**Demo build (what a public site would run):** `LLM_PROVIDER=replay npm run dev`.
+
+- **No model behind it.** Four sample resumes (public, synthetic) are offered. Their reviews were recorded from one real run of the local model each, and are played back in seconds. The page says so.
+- **What is live and what is replayed.** The parser view, the checks, quote grounding and the verdict cap run for real. Only the words the model wrote are recorded.
+- **Your own PDF still works for the parser view and checks.** It is read on the server and not stored, and no model sees it. The reviewer tabs say reviews exist only for the samples.
+- **Job matching and the bullet writer** need a model, so they are not in the demo.
+- **Recordings go stale on purpose.** A recording matches only the exact prompt it was made for. After changing a persona, a computed fact, the review schema or a sample resume, the test `src/lib/demo/recordings.test.ts` fails until you run `npm run demo:record` (about 20 minutes on the local model) and commit `demo/recordings`. Why it works this way: `DECISIONS.md` 7.6.
+- **Settings:** `LLM_PROVIDER=replay`, and `LLM_RECORDINGS_DIR` if the recordings live somewhere other than `demo/recordings`.
+
 | Script | What it does |
 | --- | --- |
 | `npm run dev` | Start the dev server |
@@ -52,6 +73,7 @@ Notes:
 | `npm run test:watch` | Run tests on file change |
 | `npm run typecheck` | Type-check without building |
 | `npm run build` | Production build |
+| `npm run demo:record` | Re-record the demo's sample reviews with the local model |
 
 ## How a review flows
 
@@ -63,7 +85,9 @@ pick PDF ──multipart upload──▶  validate size + "%PDF" magic bytes
                                 run deterministic checks
          ◀──── extracted ─────  
                                 build prompt (persona + sanitized resume)
-         ◀── review_started ──  stream from Gemini with a JSON Schema
+         ◀── review_started ──  stream from the model with a JSON Schema
+                                (once per reviewer: recruiter, hiring manager,
+                                 then the proofreader)
          ◀── review_delta × n ─ 
                                 log tokens + latency, validate with Zod
          ◀─── review_done ────  (or error)
@@ -103,7 +127,7 @@ src/
 
 Resumes are processed in memory and never written to disk or logs. Usage logs contain token counts and timing only.
 
-With `LLM_PROVIDER=ollama`, resumes never leave your machine.
+With `LLM_PROVIDER=ollama`, resumes never leave your machine. With `LLM_PROVIDER=replay` (the demo build) no model is called at all: an uploaded PDF is read on the server for the parser view and checks, and is not stored.
 
 **Gemini free-tier caveat:** Google may use free-tier content to improve its products. Use it only with your own or sample resumes. Before real users upload resumes, the hosted path needs a paid tier, bring-your-own-key, or similar (decided in Phase 5).
 
@@ -139,7 +163,7 @@ Each fixture is a resume (`.txt` or `.pdf`) plus a `*.eval.json` file describing
 
 Keywords match whole words, case-insensitively; end one with `*` to match a prefix (`quantif*`). Keyword checks reliably catch "never mentioned the gap", but not "mentioned it badly". That needs a model as judge, which comes later.
 
-Real resumes go in `fixtures/private/` (gitignored) with their own `*.eval.json`. Results are written to `eval-results/` (also gitignored, since they quote resume text) with the git commit, so you can compare numbers before and after a prompt change.
+Evals use public synthetic fixtures only (`fixtures/*.eval.json`). Results are written to `eval-results/` (gitignored) with the git commit, so you can compare numbers before and after a prompt change. Plain `npm run eval` runs the recruiter, then the proofreader on `fixtures/*.labels.json`; `--persona hiring-manager` runs one persona.
 
 On a local 8B model, expect about 90 seconds per review: 5 fixtures × 3 runs is roughly 20 minutes.
 

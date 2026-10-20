@@ -21,6 +21,8 @@ Resume Reviewer: a Next.js + TypeScript app that shows what a parser extracts fr
 | `npm run spike:bullets` / `npm run spike:judge` / `npm run spike:tools`      | Bullet-loop, judge and tool-use spikes                                                                                 |
 | `npm run spike:proofread -- --fixture <labels> --only code\|model\|hybrid --show` | Proofreader scored on a `*.labels.json` file; `--show` prints flags (may contain resume text)                  |
 | `npm run anonymize` / `npm run anonymize -- --write`                         | Replace names in `fixtures/private/` and listed tracked files from `fixtures/private/anonymize.map.json`; dry run by default, prints counts only |
+| `npm run demo:record` / `-- --only <sample>` | Record real model answers for the demo's four samples into `demo/recordings` (about 20 minutes; a full run clears the folder first). Needed after any prompt, persona, fact, schema or sample change |
+| `LLM_PROVIDER=replay npm run dev` | The hosted demo build: replays the recordings, no model, only the samples have reviews |
 | `LLM_PROVIDER=mock npm run …`                                                | Instant, no model: for UI work and checking plumbing                                                                   |
 
 Long runs: prefix with `caffeinate -i` (a sleeping Mac stalled a run for 19 minutes). Evals and spikes take 10–40 minutes on the local model: **ask before starting one**.
@@ -37,6 +39,7 @@ Long runs: prefix with `caffeinate -i` (a sleeping Mac stalled a run for 19 minu
 src/lib/llm/          provider boundary (ollama, gemini, mock), retry, usage; callStructured() = every model call
 src/lib/checks/       deterministic resume checks, timeline (dates computed in code)
 src/lib/review/       personas (recruiter, hiring manager), prompt, schema, grounding (quote checking), runReview(); reviewers.ts = the ordered Reviewer list and runReviewers()
+src/lib/demo/         demo samples (catalog.ts is pure so the browser can use it) and DEMO_TODAY; recordings live in demo/recordings
 src/lib/proofread/    proofreader: model call (model.ts), labels format + validation, scoring; code.ts is the cspell checker used by the spike only
 src/lib/jobs/         requirement extraction + matching (a workflow, not an agent: see DECISIONS §6.2)
 src/lib/bullets/      evaluator–optimizer loop: checks.ts (code checks), loop.ts (draft → check → judge → revise)
@@ -76,6 +79,7 @@ fixtures/             public fixtures (*.eval.json for reviews, *.labels.json fo
 ## Privacy and constraints
 
 - `.claude/settings.json` denies Read on `.env*`, and allows Read on `eval-results/` (opened 2026-10-19 to read failing reviews of synthetic fixtures) and Read/Edit on `fixtures/private/` (opened 2026-10-17 to anonymize company names). Older files there may hold text from the user's real resume (runs before the synthetic-only decision): read only results you just produced from public fixtures, and ask before opening any other file. **Evaluation uses synthetic public fixtures only** (user decision): don't run evals or spikes on private fixtures, and open them only when the user asks. If a problem needs a real-world case, ask for a synthetic fixture that reproduces it.
+- The demo's recordings (`demo/recordings`) are committed and may contain model text about the public sample resumes only; `demo:record` refuses anything but a plain file name in `fixtures/`.
 - Never commit or print resume content, notes, postings, or `eval-results/`. `DECISIONS.md` and `HANDOFF.md` must contain no personal details or real company names (use placeholders such as `CompanyA`; test fixtures too). Git history before 2026-10-18 still has some; accepted.
 - Notes are used per request and never stored. Only writing-style settings persist (browser `localStorage`).
 - No-spend: development must cost nothing.
@@ -86,6 +90,7 @@ fixtures/             public fixtures (*.eval.json for reviews, *.labels.json fo
 - The user reviews every diff. Stage by name, check `git diff --staged`, then commit. Don't use `git commit -am`.
 - Don't edit files in `fixtures/private/` without asking: they are the user's ground truth.
 - A new reviewer = a `Reviewer` entry in `src/lib/review/reviewers.ts` (a persona in `personas.ts` if it returns a verdict, its own pipeline and event if not) plus fixtures that list it under `reviewers` in `*.eval.json`.
+- Changing a persona, a computed fact, the review schema or a sample resume breaks `src/lib/demo/recordings.test.ts` on purpose: run `npm run demo:record` and commit `demo/recordings` with the change.
 - `AGENTS.md` is written by `next dev`; commit it with the work rather than leaving it as noise.
 - The user is the ground truth for labels and for whether a bullet is accurate.
 - TypeScript strict (`noUncheckedIndexedAccess`, `allowUnreachableCode: false`). Comments explain why, not what. User-facing copy is plain language.

@@ -1,6 +1,6 @@
 # Handoff: where the project stands
 
-Last updated 2026-10-19. Pair with `CLAUDE.md` (how to work here) and `DECISIONS.md` (why).
+Last updated 2026-10-20. Pair with `CLAUDE.md` (how to work here) and `DECISIONS.md` (why).
 
 ## Done
 
@@ -11,6 +11,8 @@ Last updated 2026-10-19. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 - **Spikes save results with the commit.** `spike:bullets` and `spike:judge` write to `eval-results/` with the git commit and whether the tree was dirty (shared `gitInfo` in `src/lib/eval/git.ts`). `spike:judge` also saves each bullet's verdict and flags, and prints flag reasons. `spike:tools` still saves nothing.
 - **Phase 3: three reviewers** (DECISIONS 7.1, 7.2). Recruiter, hiring manager and a model proofreader run one after another in one `/api/review` stream, shown as tabs with status marks; a failed reviewer shows its error on its own tab. Proofreader spike: non-words 9/9, real-word 9/13, casing 5/6, 0 false alarms on 20 trap terms, ~90 s (code spell checking was dropped). Hiring-manager eval 39/39, and it separates from the recruiter on `skills-not-shown` (verdict maybe vs yes, 3/3 each). Removing "typos" from the recruiter prompt changed nothing (49/51 before and after), and the typo expectation now lives with the proofreader.
 
+- **Phase 5 prep: a recorded demo** (DECISIONS 7.6). `LLM_PROVIDER=replay` replays real model answers for four sample resumes through the real pipeline: sample picker, banner, `/api/review` taking a `sample`. `npm run demo:record` re-records (about 20 minutes, one run per sample). A test fails when a prompt change leaves a sample without a recording. Browser-checked locally. Not deployed.
+
 ## Next
 
 - **Evaluation uses synthetic fixtures only** (decision, 2026-10-17): no real resume is used for evals or the proofreader check. `npm run eval` reads public fixtures only.
@@ -18,7 +20,7 @@ Last updated 2026-10-19. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 - **Recruiter verdict misses:** `short-tenures` is fixed by a code fact (`tenureFacts`, DECISIONS 7.4): recruiter verdict "maybe" 3/3, recruiter 91/93 and hiring manager 93/93 (after one label fix) at `07cee5d`, with the new `student-internships` counter-fixture clean. Cost: ungrounded quotes rose to 18 of 412 (4.4%), 5 of them caused by the fact. The `short-tenures` fix is partial: about 3 of 5 runs say maybe or no (7.5 corrects 7.4). Still open: `career-changer` (recruiter "yes" with no engineering title, about 1 of 5 meets the label). A prompt line did not move it (DECISIONS 7.5, reverted), so the next step is a decision about the label, not another prompt change. Browser check of the cap note is done.
 - **Proofreader in `npm run eval`:** plain `npm run eval` runs the recruiter, then the proofreader once per `fixtures/*.labels.json` (temperature 0, so one run). `--persona proofreader` runs it alone. Counts only are printed; flags are saved in `eval-results/`. No `--rescore` for it yet. **Baseline** (2026-10-19, three fixtures `typos`, `typos2`, `typos3`; commit `e37febe` for the first two, `6d6c567` for `typos3`): non-words 10/10, real-word 16/21 (`typos` 2/5, `typos2` 7/8, `typos3` 7/8), casing 5/6, traps flagged 0/33, no other false alarms, all quotes grounded. Compare any proofreader prompt change against this. Left as is (user decision): the four real-word misses ("to were", "Lead" for "Led", "uses" for "users", "of" for "off") share no clear pattern, and 21 labels are too few to tell a prompt change from noise, so add labeled cases before tuning.
 - **Uncommitted at the time of writing:** `.claude/settings.json` (private-folder access, see CLAUDE.md) and `AGENTS.md` (written by `next dev`). Both belong in the next commit.
-- **Hosting (Phase 5):** a full review is ~4-5 min locally; the route's `maxDuration = 60` would cut it short on a host.
+- **Hosting (Phase 5):** the demo build works locally with `LLM_PROVIDER=replay npm run dev`; the next step is choosing a host and deploying it (set `LLM_PROVIDER=replay` there; `.env.example` still needs the setting added by hand because the deny rule blocks it from me). Match and the bullet writer are not in the demo. After any prompt, persona or fact change, run `npm run demo:record` and commit `demo/recordings`.
 
 ## Open items
 
@@ -28,7 +30,7 @@ Last updated 2026-10-19. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 - Job evals have no check against summary-as-evidence (review evals do).
 - Number use in project bullets is intermittent (5 of 12 candidates used the notes' measured results; 5 of 9 in the grouped-notes run). Watching, not fixing.
 - The model sometimes asks for facts the notes already contain (seen once).
-- Hosted-model decision for a public demo (Phase 5): mock demo mode, bring-your-own-key, or paid with limits.
+- Hosted-model decision: settled for now as a recorded demo plus a self-host guide (DECISIONS 7.6). Bring-your-own-key or paid use waits for evidence of real users, and needs the evals rerun on that model.
 - Git history (already on GitHub) still contains earlier company names in `HANDOFF.md` and two test files. Accepted for now (decision 2026-10-18); a history rewrite is the fix if that changes before the repo is linked publicly.
 
 ## Resume work (the actual goal)
