@@ -1,6 +1,8 @@
 import { hasUsableText, runChecks } from '@/lib/checks';
+import { DEMO_TODAY, findSample, loadSample } from '@/lib/demo/samples';
 import { getEnv } from '@/lib/env';
 import { extractResume, jsonError, readForm, readResumeFile } from '@/lib/http/upload';
+import type { ExtractedDocument } from '@/lib/pdf/extract';
 import { ndjsonResponse } from '@/lib/http/ndjson-response';
 import { REVIEWERS, reviewerInfo, runReviewers } from '@/lib/review/reviewers';
 import type { StreamEvent } from '@/lib/stream/events';
@@ -10,7 +12,11 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 /**
- * POST /api/review  (multipart: resume = PDF)
+ * POST /api/review  (multipart: resume = PDF, or sample = a demo sample id)
+ *
+ * A sample is the demo's alternative to an upload: a public synthetic resume
+ * whose model answers were recorded earlier. It only exists when the provider
+ * is `replay`, and it runs as of DEMO_TODAY so its prompts match the recordings.
  *
  * Validation failures return a normal JSON error with a 4xx/5xx status.
  * Once the input is valid, we switch to a streamed NDJSON response:
@@ -27,12 +33,25 @@ export async function POST(request: Request): Promise<Response> {
 
   const form = await readForm(request);
   if (form instanceof Response) return form;
-  const bytes = await readResumeFile(form);
-  if (bytes instanceof Response) return bytes;
-  const doc = await extractResume(bytes);
-  if (doc instanceof Response) return doc;
 
-  const checks = runChecks(doc);
+  let doc: ExtractedDocument;
+  let today: Date | undefined;
+  const sampleId = form.get('sample');
+  if (typeof sampleId === 'string' && sampleId !== '') {
+    if (getEnv().LLM_PROVIDER !== 'replay') return jsonError(400, 'Samples are only available in the demo.');
+    const sample = findSample(sampleId);
+    if (!sample) return jsonError(404, 'That sample does not exist.');
+    doc = await loadSample(sample);
+    today = DEMO_TODAY;
+  } else {
+    const bytes = await readResumeFile(form);
+    if (bytes instanceof Response) return bytes;
+    const extracted = await extractResume(bytes);
+    if (extracted instanceof Response) return extracted;
+    doc = extracted;
+  }
+
+  const checks = runChecks(doc, today);
   const signal = request.signal;
 
   return ndjsonResponse<StreamEvent>(async (send) => {
@@ -55,6 +74,6 @@ export async function POST(request: Request): Promise<Response> {
       return;
     }
 
-    await runReviewers(doc, REVIEWERS, send, signal);
+    await runReviewers(doc, REVIEWERS, send, signal, today);
   });
 }
