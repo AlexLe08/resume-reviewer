@@ -81,6 +81,16 @@ const starting = (initial: ReviewState): ReviewState => ({ ...initial, status: '
 const fail = (state: ReviewState, message: string): ReviewState =>
   state.status === 'done' ? state : stopUnfinished({ ...state, status: 'error', error: message }, message);
 
+/** What to review: an uploaded PDF, or one of the demo's samples (by id). */
+export type ReviewInput = File | { sample: string };
+
+export function reviewForm(input: ReviewInput): FormData {
+  const body = new FormData();
+  if (input instanceof File) body.append('resume', input);
+  else body.append('sample', input.sample);
+  return body;
+}
+
 export function useReviewStream() {
   const { state, start, cancel } = useNdjsonRequest<ReviewState, StreamEvent>({
     url: '/api/review',
@@ -91,14 +101,7 @@ export function useReviewStream() {
     fail,
   });
 
-  const run = useCallback(
-    (file: File) => {
-      const body = new FormData();
-      body.append('resume', file);
-      return start(body);
-    },
-    [start],
-  );
+  const run = useCallback((input: ReviewInput) => start(reviewForm(input)), [start]);
 
   return { state, start: run, cancel };
 }

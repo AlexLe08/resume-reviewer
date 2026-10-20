@@ -185,6 +185,75 @@ p {
   max-width: 48rem;
 }
 
+/* Demo */
+
+.samples {
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  border: 0;
+}
+
+.samples legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.samples-hint {
+  margin: var(--space-1) 0 var(--space-3);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.samples-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-3);
+}
+
+.sample {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 2px solid var(--rule);
+  border-radius: var(--radius-large);
+  cursor: pointer;
+}
+
+.sample:hover,
+.sample:has(input:checked) {
+  border-color: var(--ink);
+}
+
+.sample:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.samples:disabled .sample {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sample-title {
+  font-weight: 600;
+}
+
+.sample-blurb {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.demo-banner,
+.demo-note {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border-left: 4px solid var(--caution);
+  background: var(--surface);
+  max-width: 65ch;
+}
+
 /* Status */
 
 .pending {

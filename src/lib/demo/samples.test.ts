@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEMO_SAMPLES, DEMO_TODAY, findSample, loadSample } from './samples';
+import { DEMO_SAMPLES, DEMO_TODAY, findSample, loadSample, recordedOn } from './samples';
 
 describe('demo samples', () => {
   it('have unique ids and load from the public fixtures folder', async () => {
@@ -20,5 +20,6 @@ describe('demo samples', () => {
 
   it('use a fixed date that formats as the same calendar day anywhere', () => {
     expect(DEMO_TODAY.toISOString().slice(0, 10)).toBe('2026-10-20');
+    expect(recordedOn()).toBe('2026-10-20');
   });
 });

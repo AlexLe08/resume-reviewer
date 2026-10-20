@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CallRecord } from '@/lib/llm/usage';
 import type { StreamEvent } from '@/lib/stream/events';
-import { initialReviewState, reduceEvent, type ReviewState } from './useReviewStream';
+import { initialReviewState, reduceEvent, reviewForm, type ReviewState } from './useReviewStream';
 
 const call = { provider: 'mock', model: 'mock', task: 't', latencyMs: 1, inputTokens: 1, outputTokens: 1, thinkingTokens: 0, estimatedCostUsd: 0 } as CallRecord;
 const extracted: StreamEvent = {
@@ -66,5 +66,20 @@ describe('reduceEvent', () => {
     expect(state.extracted?.text).toBe('resume text');
     expect(reviewer(state, 'recruiter').status).toBe('done');
     expect(reviewer(state, 'proofreader')).toMatchObject({ status: 'error', error: 'Rate limited' });
+  });
+});
+
+describe('reviewForm', () => {
+  it('sends an uploaded file as the resume field', () => {
+    const file = new File(['%PDF'], 'resume.pdf', { type: 'application/pdf' });
+    const body = reviewForm(file);
+    expect(body.get('resume')).toBeInstanceOf(File);
+    expect(body.has('sample')).toBe(false);
+  });
+
+  it('sends a demo sample as its id and no file', () => {
+    const body = reviewForm({ sample: 'weak-duties' });
+    expect(body.get('sample')).toBe('weak-duties');
+    expect(body.has('resume')).toBe(false);
   });
 });

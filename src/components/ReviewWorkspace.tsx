@@ -8,11 +8,13 @@ import { useStoredState } from '@/hooks/useStoredState';
 import { DEFAULT_STYLE, type WritingStyle } from '@/lib/bullets/request';
 import { BulletWriterProvider } from './BulletWriter';
 import { ChecksPanel } from './ChecksPanel';
+import { DemoBanner } from './DemoBanner';
 import { FilePicker } from './FilePicker';
 import { MatchPanel } from './MatchPanel';
 import { ParsedTextPanel } from './ParsedTextPanel';
 import { ProofreadPanel } from './ProofreadPanel';
 import { ReviewPanel } from './ReviewPanel';
+import { SamplePicker } from './SamplePicker';
 import { Tabs } from './Tabs';
 
 type Mode = 'review' | 'match';
@@ -29,8 +31,15 @@ const MODES: { id: Mode; label: string }[] = [
   { id: 'match', label: 'Match to a job' },
 ];
 
-export function ReviewWorkspace() {
+/**
+ * `demo` is the hosted build with no model behind it: reviews are replayed from
+ * recordings, and only the sample resumes have any.
+ */
+export function ReviewWorkspace({ demo = false }: { demo?: boolean }) {
   const [file, setFile] = useState<File | null>(null);
+  // Demo only: a sample resume chosen instead of a file, and whether the last review used one.
+  const [sampleId, setSampleId] = useState<string | null>(null);
+  const [ranSample, setRanSample] = useState(false);
   const [mode, setMode] = useState<Mode>('review');
 
   const review = useReviewStream();
@@ -74,7 +83,25 @@ export function ReviewWorkspace() {
         </p>
       </header>
 
-      <FilePicker file={file} onChange={setFile} disabled={reviewBusy || matchBusy} />
+      {demo && (
+        <SamplePicker
+          selected={sampleId}
+          onSelect={(id) => {
+            setSampleId(id);
+            setFile(null);
+          }}
+          disabled={reviewBusy}
+        />
+      )}
+
+      <FilePicker
+        file={file}
+        onChange={(next) => {
+          setFile(next);
+          if (next) setSampleId(null);
+        }}
+        disabled={reviewBusy || matchBusy}
+      />
 
       <Tabs label="What to do with your resume" tabs={MODES} selected={mode} onSelect={setMode} />
 
@@ -89,11 +116,13 @@ export function ReviewWorkspace() {
             <button
               type="button"
               className="button"
-              disabled={!file || busyElsewhere('review')}
+              disabled={(!file && !sampleId) || busyElsewhere('review')}
               onClick={() => {
-                if (!file) return;
+                const input = sampleId ? { sample: sampleId } : file;
+                if (!input) return;
                 setReviewerTab(null);
-                void review.start(file);
+                setRanSample(sampleId !== null);
+                void review.start(input);
               }}
             >
               Review resume
@@ -102,8 +131,10 @@ export function ReviewWorkspace() {
           <p className="actions-hint">
             {busyElsewhere('review')
               ? 'Waiting for another request to finish: the local model handles one at a time.'
-              : !file
-                ? 'Choose your resume above first.'
+              : !file && !sampleId
+                ? demo
+                  ? 'Choose a sample or your resume above first.'
+                  : 'Choose your resume above first.'
                 : ''}
           </p>
         </div>
@@ -119,6 +150,10 @@ export function ReviewWorkspace() {
           <p role="alert" className="error-banner">
             {review.state.error}
           </p>
+        )}
+
+        {demo && ranSample && review.state.extracted && (
+          <DemoBanner model={reviewers.find((r) => r.call)?.call?.model} />
         )}
 
         {review.state.extracted && (
@@ -146,23 +181,30 @@ export function ReviewWorkspace() {
       </section>
 
       <section role="tabpanel" id="panel-match" aria-labelledby="tab-match" hidden={mode !== 'match'}>
-        <BulletWriterProvider value={bulletWriter}>
-          <MatchPanel
-            file={file}
-            state={match.state}
-            blocked={busyElsewhere('match')}
-            onRun={(f, posting) => {
-              bulletWriter.open(null);
-              void match.run(f, posting);
-            }}
-            onCancel={match.cancel}
-          />
-        </BulletWriterProvider>
+        {demo ? (
+          <p className="demo-note">
+            Job matching and the bullet writer aren&apos;t in the demo yet. Run the app locally to use them.
+          </p>
+        ) : (
+          <BulletWriterProvider value={bulletWriter}>
+            <MatchPanel
+              file={file}
+              state={match.state}
+              blocked={busyElsewhere('match')}
+              onRun={(f, posting) => {
+                bulletWriter.open(null);
+                void match.run(f, posting);
+              }}
+              onCancel={match.cancel}
+            />
+          </BulletWriterProvider>
+        )}
       </section>
 
       <p className="dev-note">
-        Development build. With the default local model, your resume never leaves this computer. If the
-        server is set to use Gemini&apos;s free tier, Google may use what you submit to improve its products.
+        {demo
+          ? 'Demo: an uploaded PDF is read on the server for the parser view and checks, and is not stored. No model ever sees it.'
+          : "Development build. With the default local model, your resume never leaves this computer. If the server is set to use Gemini's free tier, Google may use what you submit to improve its products."}
       </p>
     </main>
   );
