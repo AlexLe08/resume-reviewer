@@ -5,7 +5,8 @@ const FAKE_QUOTE = 'This sentence does not appear anywhere in the resume.';
 /**
  * A deterministic review for the mock provider. Evidence is lifted from the
  * resume itself so the grounding check passes, except for one deliberately
- * fake quote that exercises the "not found" warning in the UI.
+ * fake quote that exercises the "not found" warning in the UI. The reviews come
+ * out as "maybe" because the verdict cap lowers this "yes".
  */
 export function buildMockReview(userPrompt: string): Review {
   const resume = userPrompt.match(/<resume>\n?([\s\S]*?)\n?<\/resume>/)?.[1] ?? '';
@@ -18,7 +19,8 @@ export function buildMockReview(userPrompt: string): Review {
   return {
     summary:
       'Mock review for UI development. No model was called. Quotes are taken from your resume so the grounding check has real text to match.',
-    wouldAdvance: 'maybe',
+    // "yes" next to the high-severity issue below, so the verdict cap and its note show up in the UI.
+    wouldAdvance: 'yes',
     strengths: [
       { point: '[Mock] A strength backed by a real quote.', evidence: quote(1) },
       { point: '[Mock] Another strength backed by a real quote.', evidence: quote(3) },
