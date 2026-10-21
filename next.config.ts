@@ -5,8 +5,9 @@ const nextConfig: NextConfig = {
   // at runtime (instead of bundling it) avoids bundler issues with pdf.js internals.
   serverExternalPackages: ['unpdf'],
   // The demo reads these from disk at request time (the recordings, and the sample
-  // resumes), so a serverless build can't see them by following imports. Without
-  // this they are missing from the deployed function and every sample fails.
+  // resumes). Next's tracing already finds them today (checked on Vercel without this
+  // setting), but only by guessing from the path code; naming them keeps the demo
+  // from breaking silently if that code changes.
   outputFileTracingIncludes: {
     '/api/review': ['./demo/recordings/**/*', './fixtures/*.txt'],
   },
