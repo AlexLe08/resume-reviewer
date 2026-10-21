@@ -7,7 +7,7 @@ Shows job seekers two things about their resume:
 
 It also matches a resume to a job posting and helps write honest bullets from your own notes. Behavior is measured with evals (`DECISIONS.md` is the log of what was tried and why).
 
-**Want to try it without a model?** The demo build replays recorded reviews for four sample resumes. It runs locally for now (no host yet). See [Demo build](#demo-build-and-running-it-yourself).
+**Try the demo:** https://resume-reviewer-sepia.vercel.app replays recorded reviews for four sample resumes, with no model behind it. See [Demo build](#demo-build-and-running-it-yourself).
 
 ## Getting started
 
@@ -57,14 +57,15 @@ Notes:
 3. Open http://localhost:3000, choose a PDF and review it. A full review takes about 4-5 minutes on a 16 GB Mac: the three reviewers run one after another on a small local model.
 4. Without a model, `LLM_PROVIDER=mock npm run dev` gives instant canned reviews for working on the UI.
 
-**Demo build (what a public site would run):** `LLM_PROVIDER=replay npm run dev`.
+**Demo build (live at https://resume-reviewer-sepia.vercel.app):** run it locally with `LLM_PROVIDER=replay npm run dev`.
 
 - **No model behind it.** Four sample resumes (public, synthetic) are offered. Their reviews were recorded from one real run of the local model each, and are played back in seconds. The page says so.
 - **What is live and what is replayed.** The parser view, the checks, quote grounding and the verdict cap run for real. Only the words the model wrote are recorded.
-- **Your own PDF still works for the parser view and checks.** It is read on the server and not stored, and no model sees it. The reviewer tabs say reviews exist only for the samples.
+- **Your own PDF still works for the parser view and checks** (up to 4 MB). It is read on the server and not stored, and no model sees it. The reviewer tabs say reviews exist only for the samples.
 - **Job matching and the bullet writer** need a model, so they are not in the demo.
 - **Recordings go stale on purpose.** A recording matches only the exact prompt it was made for. After changing a persona, a computed fact, the review schema or a sample resume, the test `src/lib/demo/recordings.test.ts` fails until you run `npm run demo:record` (about 20 minutes on the local model) and commit `demo/recordings`. Why it works this way: `DECISIONS.md` 7.6.
 - **Settings:** `LLM_PROVIDER=replay`, and `LLM_RECORDINGS_DIR` if the recordings live somewhere other than `demo/recordings`.
+- **Deployment:** Vercel, with `LLM_PROVIDER=replay` set in the project. `main` deploys to production and each pull request gets a preview; `main` only changes through PRs that pass CI (typecheck, tests, build).
 
 | Script | What it does |
 | --- | --- |

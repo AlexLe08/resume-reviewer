@@ -359,7 +359,11 @@ Median time per review: ~78–86 s
 - **Guarded by tests:** every sample must have a recording for every reviewer under the current prompts, and the folder must hold exactly that many files. Verified by adding two words to the recruiter prompt: the four sample tests failed at once.
 - **Demo behavior:** `/api/review` accepts `sample` only when the provider is `replay` (unknown ids 404, other providers 400). An uploaded PDF still gets the live parser view and checks, and the reviewer tabs show "only recorded for the samples" through the existing error path. Upload was kept (user decision) with a footer saying a PDF is read on the server, not stored, and no model sees it. The Match tab says matching and the bullet writer are not in the demo yet. A replayed call shows "(recorded run)" and no time, since it answers in milliseconds.
 - **Cost, stated plainly:** a change to a persona, a fact, the schema or a sample resume breaks the recordings test until `npm run demo:record` is run and the recordings are committed (about 20 minutes of model time). A recording is one run, so its verdicts can differ from the eval numbers.
-- **Not done:** deployment (needs a host), Match and bullets in the demo. The review route's `maxDuration = 60` is unchanged: replay is fast, and a real model behind a host would still need the per-reviewer split or a longer limit.
+- **Deployed (2026-10-21) on Vercel Hobby:** https://resume-reviewer-sepia.vercel.app. Free, and Next.js runs as-is. `main` deploys to production, each PR gets a preview (behind Vercel's login by default), and `main` is protected: PRs only, CI (`typecheck`, tests, build) must pass, rules apply to admins. Learned while deploying:
+  - **File tracing already found the demo files.** The replay provider and `loadSample` read `demo/recordings` and `fixtures/*.txt` from disk at request time; production served the samples before any config. `outputFileTracingIncludes` names them anyway, so a refactor of those paths can't break the demo silently.
+  - **Tracing also swept in `fixtures/private`** on a machine that has it. A Git-connected build never sees it (gitignored), but a CLI deploy would, so `outputFileTracingExcludes` keeps it out.
+  - **Vercel refuses request bodies over about 4.5 MB before our code runs** (`413 FUNCTION_PAYLOAD_TOO_LARGE`), so the user saw a generic error. Fix: a 4 MB cap, checked in the browser first (`upload-limits.ts`) and again on the server.
+- **Not done:** Match and bullets in the demo. The review route's `maxDuration = 60` is unchanged: replay is fast, and a real model behind a host would still need the per-reviewer split or a longer limit.
 
 ---
 
@@ -377,4 +381,4 @@ Median time per review: ~78–86 s
 - **Fact quoted as resume text** in reviews (~1 run in 10), and **stitched role-header quotes**: correctly flagged, not fixed.
 - **Latency**: ~80 s per review, 2–5 min per bullet run, one request at a time on 16 GB.
 - `useReviewStream` hasn't moved onto `useNdjsonRequest`.
-- **Hosting** (Phase 5): the demo is built (7.6) but not deployed (needs a host). Bring-your-own-key or a paid model, if real users appear, needs the evals rerun on that model first. The Match tab and the bullet writer are not in the demo.
+- **Hosting** (Phase 5): the recorded demo is deployed on Vercel (7.6). Bring-your-own-key or a paid model, if real users appear, needs the evals rerun on that model first. The Match tab and the bullet writer are not in the demo.
