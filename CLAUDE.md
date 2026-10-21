@@ -87,6 +87,7 @@ fixtures/             public fixtures (*.eval.json for reviews, *.labels.json fo
 
 - The user is a mid-level frontend developer learning LLM/agent engineering. Explain the options and tradeoffs before larger changes, and say why the chosen one wins.
 - The user reviews every diff. Stage by name, check `git diff --staged`, then commit. Don't use `git commit -am`.
+- **`main` is protected (2026-10-21):** work on a branch and merge through a PR. The `checks` job (typecheck, tests, build; `.github/workflows/ci.yml`) must pass and the branch must be up to date; rules apply to admins; merge, squash and rebase are all allowed. Vercel deploys `main` to production and each PR to a preview.
 - Don't edit files in `fixtures/private/` without asking: they are the user's ground truth.
 - A new reviewer = a `Reviewer` entry in `src/lib/review/reviewers.ts` (a persona in `personas.ts` if it returns a verdict, its own pipeline and event if not) plus fixtures that list it under `reviewers` in `*.eval.json`.
 - Changing a persona, a computed fact, the review schema or a sample resume breaks `src/lib/demo/recordings.test.ts` on purpose: run `npm run demo:record` and commit `demo/recordings` with the change.
