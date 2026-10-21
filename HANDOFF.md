@@ -1,6 +1,6 @@
 # Handoff: where the project stands
 
-Last updated 2026-10-20. Pair with `CLAUDE.md` (how to work here) and `DECISIONS.md` (why).
+Last updated 2026-10-21. Pair with `CLAUDE.md` (how to work here) and `DECISIONS.md` (why).
 
 ## Done
 
@@ -11,7 +11,7 @@ Last updated 2026-10-20. Pair with `CLAUDE.md` (how to work here) and `DECISIONS
 - **Spikes save results with the commit.** `spike:bullets` and `spike:judge` write to `eval-results/` with the git commit and whether the tree was dirty (shared `gitInfo` in `src/lib/eval/git.ts`). `spike:judge` also saves each bullet's verdict and flags, and prints flag reasons.
 - **Phase 3: three reviewers** (DECISIONS 7.1, 7.2). Recruiter, hiring manager and a model proofreader run one after another in one `/api/review` stream, shown as tabs with status marks; a failed reviewer shows its error on its own tab. Proofreader spike: non-words 9/9, real-word 9/13, casing 5/6, 0 false alarms on 20 trap terms, ~90 s (code spell checking was dropped). Hiring-manager eval 39/39, and it separates from the recruiter on `skills-not-shown` (verdict maybe vs yes, 3/3 each). Removing "typos" from the recruiter prompt changed nothing (49/51 before and after), and the typo expectation now lives with the proofreader.
 
-- **Phase 5 prep: a recorded demo** (DECISIONS 7.6). `LLM_PROVIDER=replay` replays real model answers for four sample resumes through the real pipeline: sample picker, banner, `/api/review` taking a `sample`. `npm run demo:record` re-records (about 20 minutes, one run per sample). A test fails when a prompt change leaves a sample without a recording. Browser-checked locally. Not deployed.
+- **Phase 5 prep: a recorded demo** (DECISIONS 7.6). `LLM_PROVIDER=replay` replays real model answers for four sample resumes through the real pipeline: sample picker, banner, `/api/review` taking a `sample`. `npm run demo:record` re-records (about 20 minutes, one run per sample). A test fails when a prompt change leaves a sample without a recording. Browser-checked locally. **Deployed 2026-10-21** on Vercel: https://resume-reviewer-sepia.vercel.app (DECISIONS 7.6).
 
 ## Refactor pass (done 2026-10-20)
 
@@ -24,12 +24,15 @@ Behavior-preserving cleanup, one commit per step; tests, typecheck and build sta
 - **README:** layout tree, scripts table, Gemini schema note, demo wording and eval timing fixed. Left on purpose: the repeated install steps in Getting started and "Run it yourself", and the flow diagram, which omits `proofread_done` and the demo `sample` input.
 - **Still true:** spikes are evidence (DECISIONS cites them by name), and bullet checks are frozen (CLAUDE.md rule 9).
 
-**Still open:** choosing a host for the recorded demo (Phase 5).
+## Phase 5: deployed (2026-10-21)
 
-**Order decided 2026-10-20:** deploy the PDF-only demo first, then add upload formats as a separate change with its own preview deployment.
+- **Live:** https://resume-reviewer-sepia.vercel.app (Vercel Hobby, `LLM_PROVIDER=replay`). Checked on production: four samples stream full reviews, unknown sample 404, oversize upload gets our message.
+- **Workflow:** `main` is protected; every change is a PR (#1 CI, #2 Vercel prep, #3 browser size check). Each PR gets a Vercel preview, behind Vercel's login, so check previews in the browser; production can be checked with `curl`.
+- **What deploying changed** (DECISIONS 7.6): `next.config.ts` traces the demo files in and `fixtures/private` out; uploads are capped at 4 MB, checked in the browser first because Vercel refuses bodies over about 4.5 MB before our code runs.
 
-- **Phase 5 steps:** host chosen: Vercel Hobby (2026-10-21). CI and branch protection are in (PR #1). In PR 2 (`vercel/prep`): `next.config.ts` traces `demo/recordings` and `fixtures/*.txt` into `/api/review` and excludes `fixtures/private` (the replay provider and `loadSample` read them from disk at request time); the upload cap is 4 MB (Vercel's body limit is about 4.5 MB); checked locally with `LLM_PROVIDER=replay next start`: all four samples stream a full review, the oversize and unknown-sample errors are right. Still to do: connect the repo to Vercel, set `LLM_PROVIDER=replay` there, check a preview deployment (samples, PDF upload, Match tab note), then put the live URL in the README and update DECISIONS 7.6.
-- **Upload formats, after that:** `.txt` (no dependency) and `.docx` (`mammoth`). Detection and extraction live in `src/lib/http/upload.ts` and `src/lib/pdf/extract.ts`; everything downstream uses `{ text, pageCount }`. Make `pageCount` optional and skip the Length and Selectable-text checks for formats without pages, rather than inventing a number. Label the parser view honestly ("text pulled from your Word file"). Leave the persona prompt line that says "PDF" alone, because editing it invalidates the demo recordings. Limit uncompressed DOCX size (it is a ZIP). Skip `.doc`, `.pages`, `.odt` and `.rtf`, and say so in the error message. PDF mentions to update: file picker, "Reading the PDF", parsed-text panel, error messages, demo footer, README.
+**Next up after Phase 5:**
+
+- **Upload formats:** `.txt` (no dependency) and `.docx` (`mammoth`). Detection and extraction live in `src/lib/http/upload.ts` and `src/lib/pdf/extract.ts`; everything downstream uses `{ text, pageCount }`. Make `pageCount` optional and skip the Length and Selectable-text checks for formats without pages, rather than inventing a number. Label the parser view honestly ("text pulled from your Word file"). Leave the persona prompt line that says "PDF" alone, because editing it invalidates the demo recordings. Limit uncompressed DOCX size (it is a ZIP). Skip `.doc`, `.pages`, `.odt` and `.rtf`, and say so in the error message. PDF mentions to update: file picker, "Reading the PDF", parsed-text panel, error messages, demo footer, README.
 
 ## Next
 
@@ -37,8 +40,8 @@ Behavior-preserving cleanup, one commit per step; tests, typecheck and build sta
 - **Hiring manager vs recruiter:** four more fixtures did not separate them (DECISIONS 7.3): the verdict did not follow the reviews' own issue list. A code cap is now in (`src/lib/review/verdict.ts`: a "yes" with a high-severity issue becomes "maybe", with a note in the panel). Scored on 54 saved runs it takes verdict checks from 47/54 to 51/54 with no regressions. Live full eval at `6843e6b`: recruiter 78/84, hiring manager 82/84, proofreader unchanged, no regressions; the cap fired only on hiring manager `wrong-specialty` (3 of 3). Remaining misses: the recruiter's verdict on `short-tenures` and `career-changer` ("yes" with no high issue). Cap note checked in the browser (looks fine). Hiring manager "listed skills not shown" on `skills-not-shown` is unstable (about half the runs; 3/5 at the earlier commit, 2/8 now), so don't read one miss as a regression. Ungrounded quotes were 5 of 380; watch.
 - **Recruiter verdict misses:** `short-tenures` is fixed by a code fact (`tenureFacts`, DECISIONS 7.4): recruiter verdict "maybe" 3/3, recruiter 91/93 and hiring manager 93/93 (after one label fix) at `07cee5d`, with the new `student-internships` counter-fixture clean. Cost: ungrounded quotes rose to 18 of 412 (4.4%), 5 of them caused by the fact. The `short-tenures` fix is partial: about 3 of 5 runs say maybe or no (7.5 corrects 7.4). Still open: `career-changer` (recruiter "yes" with no engineering title, about 1 of 5 meets the label). A prompt line did not move it (DECISIONS 7.5, reverted), so the next step is a decision about the label, not another prompt change. Browser check of the cap note is done.
 - **Proofreader in `npm run eval`:** plain `npm run eval` runs the recruiter, then the proofreader once per `fixtures/*.labels.json` (temperature 0, so one run). `--persona proofreader` runs it alone. Counts only are printed; flags are saved in `eval-results/`. No `--rescore` for it yet. **Baseline** (2026-10-19, three fixtures `typos`, `typos2`, `typos3`; commit `e37febe` for the first two, `6d6c567` for `typos3`): non-words 10/10, real-word 16/21 (`typos` 2/5, `typos2` 7/8, `typos3` 7/8), casing 5/6, traps flagged 0/33, no other false alarms, all quotes grounded. Compare any proofreader prompt change against this. Left as is (user decision): the four real-word misses ("to were", "Lead" for "Led", "uses" for "users", "of" for "off") share no clear pattern, and 21 labels are too few to tell a prompt change from noise, so add labeled cases before tuning.
-- **Uncommitted at the time of writing:** `.claude/settings.json` (private-folder access, see CLAUDE.md) and `AGENTS.md` (written by `next dev`). Both belong in the next commit.
-- **Hosting (Phase 5):** the demo build works locally with `LLM_PROVIDER=replay npm run dev`; the next step is choosing a host and deploying it (set `LLM_PROVIDER=replay` there; `.env.example` still needs the setting added by hand because the deny rule blocks it from me). Match and the bullet writer are not in the demo. After any prompt, persona or fact change, run `npm run demo:record` and commit `demo/recordings`.
+- **`.claude/settings.json` and `AGENTS.md`** are committed (last changed 2026-10-19 and 2026-10-18). `next dev` rewrites `AGENTS.md`; commit it with the work if it changes (CLAUDE.md).
+- **Hosting (Phase 5):** done, see above. After any prompt, persona or fact change, run `npm run demo:record` and commit `demo/recordings` in the same PR, or CI fails on `recordings.test.ts`.
 
 ## Open items
 
@@ -49,7 +52,7 @@ Behavior-preserving cleanup, one commit per step; tests, typecheck and build sta
 - Number use in project bullets is intermittent (5 of 12 candidates used the notes' measured results; 5 of 9 in the grouped-notes run). Watching, not fixing.
 - The model sometimes asks for facts the notes already contain (seen once).
 - Hosted-model decision: settled for now as a recorded demo plus a self-host guide (DECISIONS 7.6). Bring-your-own-key or paid use waits for evidence of real users, and needs the evals rerun on that model.
-- Git history (already on GitHub) still contains earlier company names in `HANDOFF.md` and two test files. Accepted for now (decision 2026-10-18); a history rewrite is the fix if that changes before the repo is linked publicly.
+- Git history (on GitHub; the repo is public) still contains earlier company names in `HANDOFF.md` and two test files. Accepted (decision 2026-10-18, confirmed 2026-10-21 after weighing a rewrite). A rewrite would now also need branch protection lifted for a force push.
 
 ## Resume work (the actual goal)
 
