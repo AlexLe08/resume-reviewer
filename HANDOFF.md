@@ -26,6 +26,11 @@ Behavior-preserving cleanup, one commit per step; tests, typecheck and build sta
 
 **Still open:** choosing a host for the recorded demo (Phase 5).
 
+**Order decided 2026-10-20:** deploy the PDF-only demo first, then add upload formats as a separate change with its own preview deployment.
+
+- **Phase 5 steps:** choose the host (leaning Vercel Hobby); set `LLM_PROVIDER=replay` there; confirm `demo/recordings` ships in the deployed build (the replay provider reads it from disk at runtime, so it may need `outputFileTracingIncludes` in `next.config.ts`; test with `next build` + `next start` first); check the 5 MB upload cap against the host's request limit (Vercel's is about 4.5 MB); then put the live URL in the README and update DECISIONS 7.6.
+- **Upload formats, after that:** `.txt` (no dependency) and `.docx` (`mammoth`). Detection and extraction live in `src/lib/http/upload.ts` and `src/lib/pdf/extract.ts`; everything downstream uses `{ text, pageCount }`. Make `pageCount` optional and skip the Length and Selectable-text checks for formats without pages, rather than inventing a number. Label the parser view honestly ("text pulled from your Word file"). Leave the persona prompt line that says "PDF" alone, because editing it invalidates the demo recordings. Limit uncompressed DOCX size (it is a ZIP). Skip `.doc`, `.pages`, `.odt` and `.rtf`, and say so in the error message. PDF mentions to update: file picker, "Reading the PDF", parsed-text panel, error messages, demo footer, README.
+
 ## Next
 
 - **Evaluation uses synthetic fixtures only** (decision, 2026-10-17): no real resume is used for evals or the proofreader check. `npm run eval` reads public fixtures only.
