@@ -1,6 +1,8 @@
 import { extractPdfText, looksLikePdf, type ExtractedDocument } from '@/lib/pdf/extract';
 
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+// Under 4.5 MB, the request-body limit of the usual serverless hosts (Vercel's, for one),
+// so our message shows instead of a bare platform error.
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 export function jsonError(status: number, message: string): Response {
   return Response.json({ error: message }, { status });
@@ -20,7 +22,7 @@ export async function readResumeFile(form: FormData): Promise<Uint8Array | Respo
   if (!(file instanceof File)) return jsonError(400, 'Attach a PDF in the "resume" field.');
   if (file.size === 0) return jsonError(400, 'That file is empty.');
   if (file.size > MAX_UPLOAD_BYTES) {
-    return jsonError(413, 'That file is over 5 MB. Export a smaller PDF and try again.');
+    return jsonError(413, 'That file is over 4 MB. Export a smaller PDF and try again.');
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (!looksLikePdf(bytes)) return jsonError(415, 'Only PDF files are supported right now.');

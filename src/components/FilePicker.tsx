@@ -41,7 +41,7 @@ export function FilePicker({ file, onChange, disabled }: FilePickerProps) {
         onDrop={handleDrop}
       >
         <span className="dropzone-title">{file ? file.name : 'Choose your resume (PDF), or drop it here'}</span>
-        <span className="dropzone-hint">PDF up to 5 MB. Nothing is saved after the review.</span>
+        <span className="dropzone-hint">PDF up to 4 MB. Nothing is saved after the review.</span>
       </label>
     </div>
   );
